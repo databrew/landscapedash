@@ -1,2 +1,8 @@
-# landscapedash
-World Bank / IFC Landscape Dashboard
+# DFS Landscape Dashboard
+
+## Developer's guide 
+
+### Data set up
+
+- Download `18-02-17 Africa DFS landscape data tool.xlsx` from google drive and save in the `data` folder.
+- Run app.

@@ -24,14 +24,7 @@ body <- dashboardBody(
   tabItems(
     tabItem(
       tabName="main",
-      fluidPage(
-        fluidRow(
-          a(href="http://databrew.cc",
-            target="_blank", uiOutput("box1")),
-          a(href="http://databrew.cc",
-            target="_blank", uiOutput("box2"))
-        )
-      )
+      fluidPage()
     ),
     tabItem(
       tabName = 'about',
@@ -128,17 +121,6 @@ ui <- dashboardPage(header, sidebar, body, skin="blue")
 # Server
 server <- function(input, output) {
   
-  output$box1 <- renderUI({
-    valueBox(
-      "12345", "Some information 1", icon = icon("bullseye"),
-      color = 'blue'
-    )})
-  
-  output$box2 <- renderUI({
-    valueBox(
-      5, "Some information 2", icon = icon("tachometer"),
-      color = 'orange'
-    )})
 }
 
 shinyApp(ui, server)
