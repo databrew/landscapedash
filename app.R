@@ -1,7 +1,9 @@
 library(shiny)
 library(shinydashboard)
+library(leaflet)
+library(RColorBrewer)
 
-# source('global.R')
+source('global_dummy.R')
 
 header <- dashboardHeader(title="DFS Landscape Dashboard")
 sidebar <- dashboardSidebar(
@@ -39,11 +41,40 @@ body <- dashboardBody(
     tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
   ),
   fluidPage(
-    column(11,
+    column(10,
            tabItems(
              tabItem(
                tabName="dfs_market_overivew",
-               fluidPage()
+               fluidPage(
+                 fluidRow(
+                   column(3,
+                          selectInput('dfs_market_overview_region',
+                                      'Region',
+                                      choices = c('North', 'South', 'East', 'West'),
+                                      selected = c('North', 'South', 'East', 'West'),
+                                      multiple = TRUE)),
+                   column(3,
+                          selectInput('dfs_market_overview_indicator',
+                                      'Indicator',
+                                      choices = letters[1:5])),
+                   column(3,
+                          sliderInput('dfs_market_overview_year',
+                                      'Year',
+                                      min = 2000,
+                                      max = 2017,
+                                      value = c(2000, 2017),
+                                      step = 1,
+                                      sep = '')),
+                   column(3,
+                          radioButtons('dfs_market_overview_view',
+                                       label = 'View type',
+                                       choices = c('Map view',
+                                                 'Chart view')))
+                 ),
+                 fluidRow(
+                   uiOutput('df_market_overview_ui')
+                 )
+               )
              ),
              tabItem(
                tabName="country_dashboard",
@@ -165,8 +196,9 @@ body <- dashboardBody(
                )
              )
            )),
-    column(1,
-           actionButton('download', 'Download', icon = icon('download')))
+    column(2,
+           div(actionButton('download', 'Download', icon = icon('download')),
+               style = 'text-align:center;'))
   )
 )
 
@@ -198,6 +230,32 @@ server <- function(input, output) {
       footer = NULL
     ))
   })
+  
+  output$dfs_market_overview_plot <-
+    renderPlot({
+      barplot(1:10)
+    })
+  
+  output$dfs_market_overview_leaf <-
+    renderLeaflet({
+      cols <- colorRampPalette(brewer.pal(8, 'YlOrRd'))(nrow(africa))
+      leaflet() %>%
+        addTiles() %>%
+        addPolygons(data = africa,
+                    fillColor = cols,
+                    weight = 0)
+    })
+  
+  # Plot vs. map ui for df_market_overview_plot
+  output$df_market_overview_ui <- 
+    renderUI({
+      make_plot <- input$dfs_market_overview_view == 'Chart view'
+      if(make_plot){
+        plotOutput('dfs_market_overview_plot')
+      } else {
+        leafletOutput('dfs_market_overview_leaf')
+      }
+    })
   
 }
 
