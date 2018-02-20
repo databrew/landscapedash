@@ -445,7 +445,13 @@ full_data <- bind_rows(afsd,
 # (2) region_data - with all the sub data that was aggregated by region and numeric value column, 
 # (3) qualy - the only data set without numeric value column
 
-unique(full_data$country)[grepl('west|east|north|south', unique(full_data$country))]
+# (1) join full_data with africa@data$country 
+unique(africa@data$country)[!unique(africa@data$country) %in% unique(full_data$coutry)]
 
+# (2) join regional_data with africa@data$country 
+unique(africa@data$country)[!unique(africa@data$country) %in% unique(regional_data$coutry)]
+
+# (1) join qualy with africa@data$country 
+unique(africa@data$country)[!unique(africa@data$country) %in% unique(qualy$coutry)]
 
 #
