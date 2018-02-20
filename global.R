@@ -8,7 +8,7 @@ library(readxl)
 library(Hmisc)
 
 # Load a shapefile of Africa
-africa <- rgdal::readOGR('spatial_data', 'AfricanCountries')
+africa <- rgdal::readOGR('spatial_data/africa_shp', 'AfricanCountries')
 
 ##########
 # read in and clean qualiative overview data
@@ -317,4 +317,3 @@ full_data <- bind_rows(afsd,
                        unique_subscribers,
                        wb_dev)
 
-unique(full_data$country)
