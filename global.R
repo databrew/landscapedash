@@ -10,6 +10,8 @@ library(htmlTable)
 library(leaflet)
 library(RColorBrewer)
 
+
+
 # Load a shapefile of Africa
 africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
 
@@ -83,6 +85,14 @@ qualy <- gather(qualy, key, value, -country)
 # add a year variable with all NAs 
 qualy$year <- NA
 
+# recode the two congos
+qualy$country <- gsub('Congo, Democratic Republic of', 'Congo (Democratic Republic of the)', qualy$country)
+qualy$country <- gsub('Congo, Republic of', 'Congo', qualy$country)
+qualy$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", qualy$country)
+qualy$country <- gsub("Gambia, The", "Gambia", qualy$country)
+qualy$country <- gsub("Tanzania", "Tanzania, United Republic of", qualy$country)
+
+# larger Democratic Republic of the Congo to the southeast (capital: Kinshasa), formerly known as Zaire and sometimes referred to as Congo-Kinshasa
 ##########
 # read in and clean IMF FAS 2017 data
 ##########
@@ -103,6 +113,15 @@ fas[, 3:ncol(fas)] <- as.data.frame(apply(fas[, 3:ncol(fas)], 2, function(x){
 # melt data to long form
 fas <- gather(fas, key, value, -c(country:year))
 
+# remove aggregate "Africa" value from country
+fas <- fas %>% dplyr::filter(country != 'Africa')
+
+fas$country <- gsub('Congo, Democratic Republic of', 'Congo (Democratic Republic of the)', fas$country)
+fas$country <- gsub('Congo, Republic of', 'Congo', fas$country)
+fas$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", fas$country)
+fas$country <- gsub("Gambia, The", "Gambia", fas$country)
+fas$country <- gsub("Tanzania", "Tanzania, United Republic of", fas$country)
+
 ##########
 # read in and clean AFSD 2016
 ##########
@@ -122,12 +141,6 @@ names(afsd)[1] <- 'country'
 # melt data to make long
 afsd <- gather(afsd, key, value, -c(country:Units))
 
-# ONCE I COLLAPSE THE DATA INTO LONG FORMAT TO GET KEY (YEAR)
-# AND VALUE, I DONT KNOW WHAT TO DO WITH THESE OTHER VARIABLE (COUNTRY - CAPITAL, CURRENCY, INDICATOR NAME, UNITS). I KNOW 
-# WHAT I CARE ABOUT HERE IS THE INDICATOR NAME AND IT WOULD BE NICE TO HAVE THE UNITS AS WELL. SO IS IT OK TO JUST PASTE THOSE COLUMNS
-# TOGETHER, CALL IT "KEY" AND REMOVE STUFF LIKE THE COUNTRY'S CAPITAL AND CURRENCY? BECAUSE THEY ARE JUST EXTRA INFORMATION BUT NOT THE 
-# VARIABLE WE'RE INTERESTED IN.
-
 # rename variable to year
 names(afsd)[6] <- 'year'
 
@@ -136,6 +149,19 @@ afsd$key <- paste0(afsd$`Indicator Name`, ' in ',afsd$Units)
 
 # keep only the 4 variable i need
 afsd <- afsd[, c('country', 'key', 'year', 'value')]
+
+
+# remove aggregate "Africa" value from country
+afsd <- afsd %>% filter(country != 'African Development Bank Group')
+
+# remove website address from country
+afsd <- afsd %>% filter(!grepl('http://dataporta', country))
+
+# recode country
+afsd$country <- gsub('Congo, Democratic Republic', 'Congo (Democratic Republic of the)', afsd$country)
+afsd$country <- gsub('Gambia, The', 'Gambia', afsd$country)
+afsd$country <- gsub("Tanzania", "Tanzania, United Republic of", afsd$country)
+afsd$country <- gsub("Sao Tome & Principe", "Sao Tome and Principe", afsd$country)
 
 ##########
 # read in findex and clean
@@ -156,6 +182,16 @@ findex <- gather(findex, key, value, -c(`country`,`year`))
 
 # make value numeric
 findex$value <- as.numeric(findex$value)
+
+# remove aggregate "Africa" value from country
+findex <- findex %>% dplyr::filter(country != 'Africa')
+
+
+findex$country <- gsub('Congo, Dem. Rep.', 'Congo (Democratic Republic of the)', findex$country)
+findex$country <- gsub('Congo, Rep.', 'Congo', findex$country)
+findex$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", findex$country)
+findex$country <- gsub("Guinea", "", findex$country)
+findex$country <- gsub("Tanzania", "Tanzania, United Republic of", findex$country)
 
 ##########
 # read and clean GDP Growth sheet
@@ -179,6 +215,12 @@ gdp <- gather(gdp, year, value, `1980`:`2022`) # are the future years projection
 
 # replace "no data" with NA in value by converting it to numeric
 gdp$value <- as.numeric(gdp$value)
+
+# recode country
+gdp$country <- gsub('Congo, Dem. Rep. of the', 'Congo (Democratic Republic of the)', gdp$country)
+gdp$country <- gsub('Congo, Republic of', 'Congo', gdp$country)
+gdp$country <- gsub('Gambia, The', 'Gambia', gdp$country)
+gdp$country <- gsub('Tanzania', 'Tanzania, United Republic of', gdp$country)
 
 
 ##########
@@ -213,6 +255,13 @@ unique_subscribers$key <- paste0(unlist(lapply(strsplit(unique_subscribers$year,
 # extract the Q information out of the year variable 
 unique_subscribers$year <- substr(unique_subscribers$year, 4, 7)
 
+# recod country column
+unique_subscribers$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", unique_subscribers$country)
+unique_subscribers$country <- gsub("Congo, Democratic Republic", "Congo (Democratic Republic of the)", unique_subscribers$country)
+unique_subscribers$country <- gsub("Tanzania", "Tanzania, United Republic of", unique_subscribers$country)
+unique_subscribers$country <- gsub("Reunion", "Réunion", unique_subscribers$country)
+
+
 ##########
 # read in and clean Smartphone Adoption
 ##########
@@ -245,6 +294,12 @@ smart_phone_adoption$key <- paste0(unlist(lapply(strsplit(smart_phone_adoption$y
 smart_phone_adoption$year <- substr(smart_phone_adoption$year, 4, 7)
 
 
+# clean country column
+smart_phone_adoption$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", smart_phone_adoption$country)
+smart_phone_adoption$country <- gsub("Congo, Democratic Republic", "Congo (Democratic Republic of the)", smart_phone_adoption$country)
+smart_phone_adoption$country <- gsub("Reunion", "Réunion", smart_phone_adoption$country)
+smart_phone_adoption$country <- gsub("Tanzania", "Tanzania, United Republic of", smart_phone_adoption$country)
+
 ##########
 # read in tech hub data and clean
 ##########
@@ -261,6 +316,11 @@ tech_hubs$year <- NA
 tech_hubs$year <- as.character(tech_hubs$year)
 tech_hubs$value <- as.numeric(tech_hubs$value)
 
+# clean up country column
+tech_hubs$country <- gsub("Congo, Democratic Republic", "Congo (Democratic Republic of the)", tech_hubs$country)
+tech_hubs$country <- gsub("Reunion", "Réunion" , tech_hubs$country)
+tech_hubs$country <- gsub("Sao Tomé and Principe", "Sao Tome and Principe", tech_hubs$country)
+tech_hubs$country <- gsub("Tanzania", "Tanzania, United Republic of", tech_hubs$country)
 
 ##########
 # read in UFA 2014 and clean
@@ -284,6 +344,10 @@ ufa <- ufa %>% dplyr::filter(country != 'Africa')
 
 # make value numeric
 ufa$value <- as.numeric(ufa$value)
+
+# recode country column
+ufa$country <- gsub("Democratic Republic of the Congo", "Congo (Democratic Republic of the)",ufa$country)
+ufa$country <- gsub("United Republic of Tanzania", "Tanzania, United Republic of",ufa$country)
 
 
 ##########
@@ -365,3 +429,19 @@ full_data <- bind_rows(afsd,
                        unique_subscribers,
                        wb_dev)
 
+
+##########
+# we need to join the full_data with the africa data to get "iso2" and the "sub_region". 
+# the full data set should be iso2, sub_region, key, year, value. 
+##########
+
+# the three data sets should be 
+# (1) full_data - with all the sub data that had individual countries and a numeric value column, 
+# (2) region_data - with all the sub data that was aggregated by region and numeric value column, 
+# (3) qualy - the only data set without numeric value column
+
+
+
+
+
+#
