@@ -258,7 +258,9 @@ server <- function(input, output) {
     out <- df %>%
       filter(sub_region %in% selected_sub_regions,
              key == selected_indicator,
-             year == selected_year)
+             year == selected_year | is.na(year)) %>%
+      # Keep only one observation per country/key/year combination
+      distinct(country, key, year, .keep_all = TRUE)
     return(out)
   })
   

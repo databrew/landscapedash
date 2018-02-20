@@ -8,8 +8,9 @@ make_leaf <- function(map, data){
                         data %>%
                           dplyr::select(iso2,
                                         key,
-                                        value),
-                        by = 'iso2')
+                                        value) %>%
+                          distinct(iso2,
+                                   key, .keep_all = TRUE))
   
   # Prepare colors
   bins <- unique(c(0, quantile(map$value, na.rm = TRUE), Inf))
@@ -29,15 +30,19 @@ make_leaf <- function(map, data){
     mutate(value = round(value, digits = 2),
            average_value = round(average_value, digits = 2))
   names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
-  
-  popups = lapply(rownames(pops), function(row){
-    x <- pops[row.names(pops) == row,]
-    htmlTable(x,
-              rnames = FALSE,
-              caption = paste0('Some caption'))
+  popups <- lapply(rownames(pops), function(row){
+    knitr::kable(pops[row.names(pops) == row,], format = 'html')
   })
   
-  leaflet() %>%
+  # The below makes a nice table, but very slow
+  # popups = lapply(rownames(pops), function(row){
+  #   x <- pops[row.names(pops) == row,]
+  #   htmlTable(x,
+  #             rnames = FALSE,
+  #             caption = paste0('Some caption'))
+  # })
+  
+  l <- leaflet() %>%
     addProviderTiles('Stamen.TonerLite') %>%
     addPolygons(data = map,
                 fillColor = ~pal(value),
@@ -45,9 +50,14 @@ make_leaf <- function(map, data){
                 opacity = 1,
                 color = "white",
                 fillOpacity = 0.7,
-                popup = popups) %>%
-    addLegend(pal = pal, values = ~value, opacity = 0.7, title = NULL,
-              position = "bottomright")
+                popup = popups)
+  if(!all(is.na(map@data$value))){
+    l <- l %>%
+      addLegend(pal = pal, values = ~value, opacity = 0.7, title = NULL,
+                position = "bottomright")
+  }
+  return(l)
+    
 }
 
 # Theme for charts
