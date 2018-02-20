@@ -220,6 +220,10 @@ gdp$country <- gsub('Congo, Republic of', 'Congo', gdp$country)
 gdp$country <- gsub('Gambia, The', 'Gambia', gdp$country)
 gdp$country <- gsub('Tanzania', 'Tanzania, United Republic of', gdp$country)
 
+# get regional african data from gdp - first make a grepl character object that has 
+# all regional data
+regional_string <- 'Africa (Regions)|North Africa|Sub-Saharan Africa|North Africa'
+regional_data_gdp <- gdp %>% filter(grepl(regional_string, gdp$country))
 
 ##########
 # read in Unique subsc sheet
@@ -380,8 +384,6 @@ gpss_retail_transactions$key <- paste0(gpss_retail_transactions$key, ' ',
 
 gpss_retail_transactions$`Variable name (see variable key in C1)` <- NULL
 
-
-
 ##########
 # read in WEBDev Ind and clean
 ##########
@@ -413,6 +415,12 @@ wb_dev$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", wb_dev$country)
 wb_dev$country <- gsub("Gambia, The", "Gambia", wb_dev$country)
 wb_dev$country <- gsub("Tanzania, The", "Tanzania, United Republic of" , wb_dev$country)
 
+# get regional data
+regional_string <- 'Sub-Saharan|North Africa'
+regional_data_wb <- wb_dev %>% filter(grepl(regional_string, wb_dev$country))
+
+
+
 # Ignoring these for now due to double headers
 # gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
 #                   sheet = 'GPPS Accounts')
@@ -436,22 +444,21 @@ full_data <- bind_rows(afsd,
 
 
 ##########
-# we need to join the full_data with the africa data to get "iso2" and the "sub_region". 
-# the full data set should be iso2, sub_region, key, year, value. 
+# get data from africa@data
 ##########
+# get iso2 and sub_region from africa
+temp_africa <- africa@data[, c('country','iso2', "sub_region")]
+temp_africa <- temp_africa %>% group_by(iso2, sub_region) %>% distinct()
 
-# the three data sets should be 
-# (1) full_data - with all the sub data that had individual countries and a numeric value column, 
-# (2) region_data - with all the sub data that was aggregated by region and numeric value column, 
-# (3) qualy - the only data set without numeric value column
+# (1) get iso2 and sub_region for country in full_data - use inner_join to drop extra countries
+# in full_data
+full_data <- inner_join(full_data, temp_africa, by = 'country')
 
-# (1) join full_data with africa@data$country 
-unique(africa@data$country)[!unique(africa@data$country) %in% unique(full_data$coutry)]
+# (2) combine gdp and wb regional data
+full_data_regional <- bind_rows(regional_data_gdp,
+                                regional_data_wb)
 
-# (2) join regional_data with africa@data$country 
-unique(africa@data$country)[!unique(africa@data$country) %in% unique(regional_data$coutry)]
-
-# (1) join qualy with africa@data$country 
+# (3) Same thing as in (1) - get iso2 and sub_region for qualy
 unique(africa@data$country)[!unique(africa@data$country) %in% unique(qualy$coutry)]
+full_data_qualy <- inner_join(qualy, temp_africa, by = 'country')
 
-#
