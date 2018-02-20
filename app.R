@@ -65,7 +65,8 @@ body <- dashboardBody(
                           radioButtons('dfs_market_overview_view',
                                        label = 'View type',
                                        choices = c('Map view',
-                                                   'Chart view')))
+                                                   'Chart view'),
+                                       selected = 'Chart view'))
                  ),
                  fluidRow(
                    uiOutput('df_market_overview_ui')
@@ -317,23 +318,28 @@ server <- function(input, output) {
         filter(!is.na(value)) %>%
         arrange(value) %>%
         mutate(country = gsub('_', '\n', country)) 
-      plot_data <- plot_data %>%
-        mutate(country = factor(country,
-                                levels = plot_data$country)) %>%
-        mutate(ranking = 1:nrow(plot_data))
-      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(plot_data))
-      ggplot(data = plot_data,
-             aes(x = country,
-                 y = value)) +
-        geom_bar(stat = 'identity',
-                 aes(fill = factor(ranking))) +
-        theme_landscape() +
-        theme(axis.text.x = element_text(angle = 90)) +
-        labs(x = '',
-             y = '') +
-        scale_fill_manual(name = '',
-                          values = cols) +
-        theme(legend.position = 'none')
+      if(nrow(plot_data) > 0){
+        plot_data <- plot_data %>%
+          mutate(country = factor(country,
+                                  levels = plot_data$country)) %>%
+          mutate(ranking = 1:nrow(plot_data))
+        cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(plot_data))
+        ggplot(data = plot_data,
+               aes(x = country,
+                   y = value)) +
+          geom_bar(stat = 'identity',
+                   aes(fill = factor(ranking))) +
+          theme_landscape() +
+          theme(axis.text.x = element_text(angle = 90)) +
+          labs(x = '',
+               y = '') +
+          scale_fill_manual(name = '',
+                            values = cols) +
+          theme(legend.position = 'none')
+      } else {
+        NULL
+      }
+      
     })
   
   output$dfs_market_overview_leaf <-
