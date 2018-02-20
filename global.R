@@ -11,7 +11,6 @@ library(leaflet)
 library(RColorBrewer)
 
 
-
 # Load a shapefile of Africa
 africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
 
@@ -190,7 +189,6 @@ findex <- findex %>% dplyr::filter(country != 'Africa')
 findex$country <- gsub('Congo, Dem. Rep.', 'Congo (Democratic Republic of the)', findex$country)
 findex$country <- gsub('Congo, Rep.', 'Congo', findex$country)
 findex$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", findex$country)
-findex$country <- gsub("Guinea", "", findex$country)
 findex$country <- gsub("Tanzania", "Tanzania, United Republic of", findex$country)
 
 ##########
@@ -383,6 +381,7 @@ gpss_retail_transactions$key <- paste0(gpss_retail_transactions$key, ' ',
 gpss_retail_transactions$`Variable name (see variable key in C1)` <- NULL
 
 
+
 ##########
 # read in WEBDev Ind and clean
 ##########
@@ -407,6 +406,12 @@ wb_dev$year <- substr(wb_dev$year, 1,4)
 # change value to numeric to turn ".." into NA 
 wb_dev$value <- as.numeric(wb_dev$value)
 
+# recode country column
+wb_dev$country <- gsub("Congo, Dem. Rep.", "Congo (Democratic Republic of the)", wb_dev$country)
+wb_dev$country <- gsub("Congo, Rep.", "Congo", wb_dev$country)
+wb_dev$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", wb_dev$country)
+wb_dev$country <- gsub("Gambia, The", "Gambia", wb_dev$country)
+wb_dev$country <- gsub("Tanzania, The", "Tanzania, United Republic of" , wb_dev$country)
 
 # Ignoring these for now due to double headers
 # gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
@@ -440,8 +445,7 @@ full_data <- bind_rows(afsd,
 # (2) region_data - with all the sub data that was aggregated by region and numeric value column, 
 # (3) qualy - the only data set without numeric value column
 
-
-
+unique(full_data$country)[grepl('west|east|north|south', unique(full_data$country))]
 
 
 #
