@@ -5,7 +5,7 @@ library(leaflet)
 library(sp)
 library(rgdal)
 library(readxl)
-library(reshape2)
+library(Hmisc)
 
 # Load a shapefile of Africa
 africa <- rgdal::readOGR('spatial_data', 'AfricanCountries')
@@ -29,7 +29,7 @@ qualy <- as.data.frame(apply(qualy, 2, function(x){
 colnames(qualy)[1] <- 'country'
 
 # melt data into long format 
-qualy1 <- gather(qualy, key, value, -country)
+qualy <- gather(qualy, key, value, -country)
 
 # add a year variable with all NAs 
 qualy$year <- NA
@@ -150,45 +150,140 @@ names(unique_subscribers)[1] <- 'country'
 
 # extract (strsplit) the 'Q' info into one variable called variable with Unique Subscribers" and "Q" info pasted together
 unique_subscribers$key <- paste0(unlist(lapply(strsplit(unique_subscribers$year, ' '), 
-                                        function(x){
-                                          x[1]  
-                                          })),' ','Unique Subscribers')
+                                               function(x){
+                                                 x[1]  
+                                               })),' ','Percentage Unique Subscribers')
 
 # extract the Q information out of the year variable 
 unique_subscribers$year <- as.numeric(substr(unique_subscribers$year, 4, 7))
 
+##########
+# read in and clean Smartphone Adoption
+##########
 
-#
-gsma_names <- names(read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                               sheet = 'Unique subsc ', skip = 2)[0,])
-unique_subscribers <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                                 sheet = 'Unique subsc ', skip = 3)
-names(gsma) <- gsma_names; rm(gsma_names)
+smart_phone_adoption <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+                                   sheet = 'Smartphone adoption', skip = 2)
+
+# remove first row because its just a an aggregate africa variable. 
+smart_phone_adoption <- smart_phone_adoption[-1, ]
+
+# remove IDs (can I do this ?)
+smart_phone_adoption <- smart_phone_adoption %>% dplyr::select(-starts_with('id'))
+
+# remove region and subregion (can I do this as well?)
+smart_phone_adoption <- smart_phone_adoption %>% dplyr::select(-contains('egion'))
+
+# gather data into long format
+smart_phone_adoption <- gather(smart_phone_adoption, year, value, -Country)
+
+# make country lower case 
+names(smart_phone_adoption)[1] <- 'country'
+
+# extract (strsplit) the 'Q' info into one variable called variable with Unique Subscribers" and "Q" info pasted together
+smart_phone_adoption$key <- paste0(unlist(lapply(strsplit(smart_phone_adoption$year, ' '), 
+                                                 function(x){
+                                                   x[1]  
+                                                 })),' ','Percentage with Smart Phone')
+
+# extract the Q information out of the year variable 
+smart_phone_adoption$year <- as.numeric(substr(smart_phone_adoption$year, 4, 7))
 
 
+##########
+# read in tech hub data and clean
+##########
 
-
-
-
-gsma_names <- names(read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                               sheet = 'Smartphone adoption', skip = 2)[0,])
-smartphone_adoption <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                                  sheet = 'Smartphone adoption', skip = 3)
-names(smartphone_adoption) <- gsma_names; rm(gsma_names)
-
+# read in data and get the only two columns that actually have data
 tech_hubs <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                         sheet = 'tech hubs', skip = 2) 
 tech_hubs <- tech_hubs[,(ncol(tech_hubs) - c(1,0))]
-names(tech_hubs) <- c('country', 'hubs')
+names(tech_hubs) <- c('country', 'value')
+
+# add key and year column
+tech_hubs$key <- 'Tech Hubs'
+tech_hubs$year <- NA
+
+
+##########
+# read in UFA 2014 and clean
+##########
 ufa <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                   sheet = 'UFA 2014')
+
+# remove X_1 because all NA and country code
+ufa$X__1 <- ufa$`Country Code` <-  NULL
+
+# create year variable filled with 2014 and rename Country Name to country
+ufa$year <- '2014'
+names(ufa)[1] <- 'country'
+
+# rename to value and create key filled with "# of unbanked adults"
+names(ufa)[2] <- 'value'
+ufa$key <- "# of unbanked adults"
+
+# remove last row (africa)
+ufa <- ufa %>% dplyr::filter(country != 'Africa')
+
+
+##########
+# read in GPSS Retail transactions and clean
+##########
+gpss_retail_transactions <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+                                       sheet = 'GPSS Retail transactions')
+
+# remove country code
+gpss_retail_transactions$`Country code` <- NULL
+
+# rename Country name to country and year
+names(gpss_retail_transactions)[1] <- 'country'
+names(gpss_retail_transactions)[2] <- 'year'
+
+# gather columns into long format 
+gpss_retail_transactions <- gather(gpss_retail_transactions, key, value, -c(country, year, `Variable name (see variable key in C1)`))
+
+# clean up variable names
+gpss_retail_transactions$`Variable name (see variable key in C1)` <- 
+  gsub('_', ' ', gpss_retail_transactions$`Variable name (see variable key in C1)`) 
+
+
+# make first letter capital
+gpss_retail_transactions$`Variable name (see variable key in C1)` <- 
+  Hmisc::capitalize(gpss_retail_transactions$`Variable name (see variable key in C1)`)
+
+# combine to key columns 
+gpss_retail_transactions$key <- paste0(gpss_retail_transactions$key, ' ',
+                                       gpss_retail_transactions$`Variable name (see variable key in C1)`)
+
+gpss_retail_transactions$`Variable name (see variable key in C1)` <- NULL
+
+
+##########
+# read in WEBDev Ind and clean
+##########
+wb_dev <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+                     sheet = 'WBDev Ind')
+
+# remove country code
+wb_dev$`Country Code` <- NULL
+
+# rename Country name to country
+names(wb_dev)[1] <- 'country'
+
+# rename Series Name to key
+names(wb_dev)[2] <- 'key'
+
+# gather data to make long
+wb_dev <- gather(wb_dev, year, value, -c(country, key))
+
+# clean year variable 
+wb_dev$year <- as.numeric(substr(wb_dev$year, 1,4))
+
+# change value to numeric to turn ".." into NA 
+wb_dev$value <- as.numeric(wb_dev$value)
+
 
 # Ignoring these for now due to double headers
 # gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
 #                   sheet = 'GPPS Accounts')
 # gpss_access_points <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
 #                             sheet = 'GPPS Accounts')
-gpss_retail_transactions <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                                       sheet = 'GPSS Retail transactions')
-wb_dev <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                     sheet = 'WBDev Ind')
