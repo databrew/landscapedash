@@ -13,12 +13,13 @@ africa <- rgdal::readOGR('spatial_data', 'AfricanCountries')
 ##########
 # read in and clean qualiative overview data
 ##########
+# Questions for joe: the "value" in this data set is not not numeric. Do we keep it?
+
 qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                     sheet = 'Qualitative Overview')
 
 # this data seems to contain only long character strings as variables, not sure if its useful for anything.
 # first remove columns that are entirely NA
-qualy <- qualy[,colSums(is.na(qualy))<nrow(qualy)]
 
 # replace N/A with NA 
 qualy <- as.data.frame(apply(qualy, 2, function(x){
@@ -73,11 +74,11 @@ names(afsd)[1] <- 'country'
 # melt data to make long
 afsd <- gather(afsd, key, value, -c(country:Units))
 
-# THIS IS WEAR IM STUCK -  ONCE I COLLAPSE THE DATA INTO LONG FORMAT TO GET KEY (YEAR)
+# ONCE I COLLAPSE THE DATA INTO LONG FORMAT TO GET KEY (YEAR)
 # AND VALUE, I DONT KNOW WHAT TO DO WITH THESE OTHER VARIABLE (COUNTRY - CAPITAL, CURRENCY, INDICATOR NAME, UNITS). I KNOW 
 # WHAT I CARE ABOUT HERE IS THE INDICATOR NAME AND IT WOULD BE NICE TO HAVE THE UNITS AS WELL. SO IS IT OK TO JUST PASTE THOSE COLUMNS
 # TOGETHER, CALL IT "KEY" AND REMOVE STUFF LIKE THE COUNTRY'S CAPITAL AND CURRENCY? BECAUSE THEY ARE JUST EXTRA INFORMATION BUT NOT THE 
-# VARIABLE WE'RE INTERESTED IN (BELOW):
+# VARIABLE WE'RE INTERESTED IN.
 
 # rename variable to year
 names(afsd)[6] <- 'year'
@@ -97,9 +98,16 @@ findex <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
 # remove country code 
 findex$`Country Code` <- NULL
 
-# gather data
-findex <- gather(findex, key, value, -c(`Country Name`:`Year`))
+# rename Country Name to country
+names(findex)[1] <- 'country'
+names(findex)[2] <- 'year'
 
+
+# gather data
+findex <- gather(findex, key, value, -c(`country`,`year`))
+
+# make value numeric
+findex$value <- as.numeric(findex$value)
 
 ##########
 # read and clean GDP Growth sheet
@@ -116,7 +124,7 @@ gdp <- gdp %>% filter(!grepl('IMF', `Real GDP growth (Annual percent change)`))
 
 # rename first column to country and then create a variable that we just replace (Real GDP Growth (Annual Percent Change))
 names(gdp)[1] <- 'country'
-gdp$variable <- 'Real GDP Growth (Annual Percent Change)'
+gdp$key <- 'Real GDP Growth (Annual Percent Change)'
 
 # make data long with gatherm and name "key" "year", since those are the column names 
 gdp <- gather(gdp, year, value, `1980`:`2022`) # are the future years projections?
@@ -155,7 +163,7 @@ unique_subscribers$key <- paste0(unlist(lapply(strsplit(unique_subscribers$year,
                                                })),' ','Percentage Unique Subscribers')
 
 # extract the Q information out of the year variable 
-unique_subscribers$year <- as.numeric(substr(unique_subscribers$year, 4, 7))
+unique_subscribers$year <- substr(unique_subscribers$year, 4, 7)
 
 ##########
 # read in and clean Smartphone Adoption
@@ -186,7 +194,7 @@ smart_phone_adoption$key <- paste0(unlist(lapply(strsplit(smart_phone_adoption$y
                                                  })),' ','Percentage with Smart Phone')
 
 # extract the Q information out of the year variable 
-smart_phone_adoption$year <- as.numeric(substr(smart_phone_adoption$year, 4, 7))
+smart_phone_adoption$year <- substr(smart_phone_adoption$year, 4, 7)
 
 
 ##########
@@ -202,6 +210,8 @@ names(tech_hubs) <- c('country', 'value')
 # add key and year column
 tech_hubs$key <- 'Tech Hubs'
 tech_hubs$year <- NA
+tech_hubs$year <- as.character(tech_hubs$year)
+tech_hubs$value <- as.numeric(tech_hubs$value)
 
 
 ##########
@@ -224,6 +234,9 @@ ufa$key <- "# of unbanked adults"
 # remove last row (africa)
 ufa <- ufa %>% dplyr::filter(country != 'Africa')
 
+# make value numeric
+ufa$value <- as.numeric(ufa$value)
+
 
 ##########
 # read in GPSS Retail transactions and clean
@@ -237,6 +250,7 @@ gpss_retail_transactions$`Country code` <- NULL
 # rename Country name to country and year
 names(gpss_retail_transactions)[1] <- 'country'
 names(gpss_retail_transactions)[2] <- 'year'
+gpss_retail_transactions$year <- as.character(gpss_retail_transactions$year)
 
 # gather columns into long format 
 gpss_retail_transactions <- gather(gpss_retail_transactions, key, value, -c(country, year, `Variable name (see variable key in C1)`))
@@ -276,7 +290,7 @@ names(wb_dev)[2] <- 'key'
 wb_dev <- gather(wb_dev, year, value, -c(country, key))
 
 # clean year variable 
-wb_dev$year <- as.numeric(substr(wb_dev$year, 1,4))
+wb_dev$year <- substr(wb_dev$year, 1,4)
 
 # change value to numeric to turn ".." into NA 
 wb_dev$value <- as.numeric(wb_dev$value)
@@ -287,3 +301,20 @@ wb_dev$value <- as.numeric(wb_dev$value)
 #                   sheet = 'GPPS Accounts')
 # gpss_access_points <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
 #                             sheet = 'GPPS Accounts')
+
+##########
+# bind all of the data together 
+##########
+full_data <- bind_rows(afsd,
+                       fas,
+                       findex,
+                       gdp,
+                       gpss_retail_transactions,
+                       # qualy, ignoring because its "value" is a character and cant bind with other numerics, its bad data anyway
+                       smart_phone_adoption,
+                       tech_hubs,
+                       ufa,
+                       unique_subscribers,
+                       wb_dev)
+
+unique(full_data$country)
