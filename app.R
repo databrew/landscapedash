@@ -1,19 +1,35 @@
 library(shiny)
 library(shinydashboard)
 
-source('global.R')
+# source('global.R')
 
 header <- dashboardHeader(title="DFS Landscape Dashboard")
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem(
-      text="Main",
-      tabName="main",
-      icon=icon("eye")),
+      text='DFS Market Overview',
+      tabName='dfs_market_overivew',
+      icon=icon('eye')),
+    menuItem(
+      text='Country Dashboard',
+      tabName='country_dashboard',
+      icon=icon('map')),
+    menuItem(
+      text='Country Analysis',
+      tabName='country_analysis',
+      icon=icon('stats', lib = 'glyphicon')),
+    menuItem(
+      text='X-Market Analysis',
+      tabName='x_market_analysis',
+      icon=icon('flash', lib = 'glyphicon')),
+    menuItem(
+      text='Glossary',
+      tabName='glossary',
+      icon=icon('book', lib = 'glyphicon')),
     menuItem(
       text = 'About',
       tabName = 'about',
-      icon = icon("cog", lib = "glyphicon"))
+      icon = icon('cog', lib = 'glyphicon'))
   )
 )
 
@@ -23,7 +39,23 @@ body <- dashboardBody(
   ),
   tabItems(
     tabItem(
-      tabName="main",
+      tabName="dfs_market_overivew",
+      fluidPage()
+    ),
+    tabItem(
+      tabName="country_dashboard",
+      fluidPage()
+    ),
+    tabItem(
+      tabName="country_analysis",
+      fluidPage()
+    ),
+    tabItem(
+      tabName="x_market_analysis",
+      fluidPage()
+    ),
+    tabItem(
+      tabName="glossary",
       fluidPage()
     ),
     tabItem(
