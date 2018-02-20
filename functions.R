@@ -3,6 +3,11 @@ make_leaf <- function(map, data){
   require(leaflet)
   require(RColorBrewer)
   
+  save(map, data,
+       file = '~/Desktop/saved.RData')
+  # Define the title
+  title <- data$key[1]
+  
   # Join data and map
   map@data <- left_join(map@data,
                         data %>%
@@ -13,8 +18,12 @@ make_leaf <- function(map, data){
                                    key, .keep_all = TRUE))
   
   # Prepare colors
-  bins <- unique(c(0, quantile(map$value, na.rm = TRUE), Inf))
-  pal <- colorBin("YlOrRd", domain = map$value, bins = bins)
+  # bins <- unique(c(0, quantile(map$value, na.rm = TRUE), Inf))
+  # pal <- colorBin("YlOrRd", domain = map$value, bins = bins)
+  pal <- colorNumeric(
+    palette = "YlOrRd",
+    domain = map@data$value
+  )
   
   # Popups
   avg_val <- mean(map@data$value, na.rm = TRUE)
@@ -33,28 +42,20 @@ make_leaf <- function(map, data){
   popups <- lapply(rownames(pops), function(row){
     knitr::kable(pops[row.names(pops) == row,], format = 'html')
   })
-  
-  # The below makes a nice table, but very slow
-  # popups = lapply(rownames(pops), function(row){
-  #   x <- pops[row.names(pops) == row,]
-  #   htmlTable(x,
-  #             rnames = FALSE,
-  #             caption = paste0('Some caption'))
-  # })
-  
-  l <- leaflet() %>%
+
+  l <- leaflet(data = map) %>%
     addProviderTiles('Stamen.TonerLite') %>%
-    addPolygons(data = map,
-                fillColor = ~pal(value),
-                weight = 0.2,
-                opacity = 1,
-                color = "white",
+    addPolygons(stroke = FALSE, 
+                smoothFactor = 0.2, 
                 fillOpacity = 0.7,
+                color = ~pal(value),
                 popup = popups)
   if(!all(is.na(map@data$value))){
     l <- l %>%
-      addLegend(pal = pal, values = ~value, opacity = 0.7, title = NULL,
-                position = "bottomright")
+      addLegend(pal = pal, values = ~value, opacity = 0.7, 
+                position = "bottomright",
+                # title = title, # too wide!
+                title = NULL)
   }
   return(l)
     

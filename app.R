@@ -52,10 +52,7 @@ body <- dashboardBody(
                                       selected = sub_regions,
                                       multiple = TRUE)),
                    column(3,
-                          selectInput('dfs_market_overview_indicator',
-                                      'Indicator',
-                                      choices = indicators,
-                                      selected = indicators[1])),
+                          uiOutput('dfs_market_overview_indicator_ui')),
                    column(3,
                           sliderInput('dfs_market_overview_year',
                                       'Year',
@@ -242,6 +239,52 @@ server <- function(input, output) {
     ))
   })
   
+  # Get a reactive selected indicator, so as to carry through between
+  # re-rendering of the drop-down menu
+  selected_indicator <- reactiveVal(value = NULL)
+  observeEvent(input$dfs_market_overview_indicator, {
+    this <- input$dfs_market_overview_indicator
+    if(!is.null(this)){
+      selected_indicator(this)
+    }
+  })
+  
+  # Indicator selection ui
+  output$dfs_market_overview_indicator_ui <- renderUI({
+    selected_year <- input$dfs_market_overview_year
+    if(is.null(selected_year)){
+      selected_year <- as.numeric(format(Sys.Date(), '%Y'))
+    }
+    
+    # Only allow those indicators which have some values for the year in question
+    available_indicators <- okay_indicators %>% filter(year == selected_year) %>%
+      .$key %>% unlist
+    
+    # If the previously selected indicator is available, use it
+    use_si <- FALSE
+    si <- selected_indicator()
+    if(!is.null(si)){
+      if(length(si) > 0){
+        if(si %in% available_indicators){
+          use_si <- TRUE
+        }
+      }
+    }
+    
+    if(use_si){
+      selectInput('dfs_market_overview_indicator',
+                  'Indicator',
+                  choices = available_indicators,
+                  selected = si)
+    } else {
+      selectInput('dfs_market_overview_indicator',
+                  'Indicator',
+                  choices = available_indicators)
+    }
+
+    
+  })
+  
   # Reactive shapefile for map
   afr <- reactive({
     out <- africa
@@ -253,14 +296,17 @@ server <- function(input, output) {
   # Reactive dataset after filtering for region, year and indicator
   df_filtered <- reactive({
     selected_sub_regions <- input$dfs_market_overview_region
-    selected_indicator <- input$dfs_market_overview_indicator
+    selected_key <- input$dfs_market_overview_indicator
+    message('selected indicator is ', selected_key)
     selected_year <- input$dfs_market_overview_year
     out <- df %>%
       filter(sub_region %in% selected_sub_regions,
-             key == selected_indicator,
-             year == selected_year | is.na(year)) %>%
+             key == selected_key,
+             year == selected_year) %>%
       # Keep only one observation per country/key/year combination
       distinct(country, key, year, .keep_all = TRUE)
+    message('df filtered is ')
+    print(head(out))
     return(out)
   })
   
@@ -268,6 +314,7 @@ server <- function(input, output) {
     renderPlot({
       plot_data <- df_filtered()
       plot_data <- plot_data %>%
+        filter(!is.na(value)) %>%
         arrange(value) %>%
         mutate(country = gsub('_', '\n', country)) 
       plot_data <- plot_data %>%
@@ -295,9 +342,13 @@ server <- function(input, output) {
       map <- afr()
       # Get data
       data <- df_filtered()
-      # Make choropleth
-      make_leaf(map = map, data = data)
       
+      if(!is.null(map) & !is.null(data)){
+        if(nrow(map) > 0 & nrow(data) > 0){
+          # Make choropleth
+          make_leaf(map = map, data = data)
+        }
+      }
     })
   
   # Plot vs. map ui for df_market_overview_plot

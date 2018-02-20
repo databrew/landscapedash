@@ -445,8 +445,10 @@ if('prepared_data.RData' %in% dir()){
   # (1) get iso2 and sub_region for country in df - use inner_join to drop extra countries
   # in df
   df <- inner_join(df, temp_africa, by = 'country')
+  # For those with no year, assume 2018
+  df$year[is.na(df$year)] <- 2018
   # Arrange descending from most modern to least
-  df <- df %>% arrange(desc(year))
+  df <- df %>% arrange(desc(year), key, country)
 
   # (2) combine gdp and wb regional data
   df_regional <- bind_rows(regional_data_gdp,
@@ -465,9 +467,21 @@ if('prepared_data.RData' %in% dir()){
        file = 'prepared_data.RData')
 }
 
+# Get which indicators are not 100% NA for any given year
+okay_indicators <- df %>%
+  filter(!is.na(value)) %>%
+  group_by(year, key) %>%
+  summarise(ok = length(value) > 0) %>%
+  ungroup %>%
+  arrange(year) %>%
+  filter(ok)
+
 # Create vector of indicators
 indicators <- sort(unique(df$key))
 
 # Create vector of countries
 countries <- sort(unique(df$country))
+
+# Create a vector of years
+years <- sort(unique(df$year))
 
