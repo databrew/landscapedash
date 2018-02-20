@@ -50,8 +50,8 @@ body <- dashboardBody(
                    column(3,
                           selectInput('dfs_market_overview_region',
                                       'Region',
-                                      choices = c('North', 'South', 'East', 'West'),
-                                      selected = c('North', 'South', 'East', 'West'),
+                                      choices = sub_regions,
+                                      selected = sub_regions,
                                       multiple = TRUE)),
                    column(3,
                           selectInput('dfs_market_overview_indicator',
@@ -231,6 +231,14 @@ server <- function(input, output) {
     ))
   })
   
+  # Reactive shapefile for map
+  afr <- reactive({
+    out <- africa
+    selected_sub_regions <- input$dfs_market_overview_region
+    out <- out[out@data$sub_region %in% selected_sub_regions,]
+    return(out)
+  })
+  
   output$dfs_market_overview_plot <-
     renderPlot({
       barplot(1:10)
@@ -238,12 +246,14 @@ server <- function(input, output) {
   
   output$dfs_market_overview_leaf <-
     renderLeaflet({
-      cols <- colorRampPalette(brewer.pal(8, 'YlOrRd'))(nrow(africa))
+      map <- afr()
+      cols <- colorRampPalette(brewer.pal(8, 'YlOrRd'))(nrow(map))
       leaflet() %>%
-        addTiles() %>%
-        addPolygons(data = africa,
+        addProviderTiles('Stamen.TonerLite') %>%
+        addPolygons(data = map,
                     fillColor = cols,
-                    weight = 0)
+                    weight = 0,
+                    fillOpacity = 0.9)
     })
   
   # Plot vs. map ui for df_market_overview_plot

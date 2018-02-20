@@ -8,7 +8,30 @@ library(readxl)
 
 # Load a shapefile of Africa
 africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
-# 
+
+# Get countries by region
+countries_by_region <- read_csv('spatial_data/countries_by_region.csv')
+# Keep only Africa and certain columns
+countries_by_region <- countries_by_region %>%
+  filter(region == 'Africa') %>%
+  dplyr::rename(sub_region = `sub-region`,
+                country = name,
+                iso2 = `alpha-2`,
+                iso3 = `alpha-3`) %>%
+  dplyr::filter(sub_region != 'Northern Africa') %>%
+  dplyr::select(country, region, sub_region, iso2, iso3)
+
+# Define a vector of sub_regions
+sub_regions <- sort(unique(countries_by_region$sub_region))
+
+# Join region and country code information to the africa shapefile
+africa@data <- 
+  left_join(africa@data,
+            countries_by_region,
+            by = c('ISO_CC' = 'iso2'))
+# Remove all those with no info (ie, north africa)
+africa <- africa[!is.na(africa@data$sub_region),]
+
 # # Read in the raw data
 # qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
 #                         sheet = 'Qualitative Overview')
