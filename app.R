@@ -1,7 +1,5 @@
 library(shiny)
 library(shinydashboard)
-library(leaflet)
-library(RColorBrewer)
 
 source('global_dummy.R')
 
@@ -56,20 +54,21 @@ body <- dashboardBody(
                    column(3,
                           selectInput('dfs_market_overview_indicator',
                                       'Indicator',
-                                      choices = letters[1:5])),
+                                      choices = indicators,
+                                      selected = indicators[1])),
                    column(3,
                           sliderInput('dfs_market_overview_year',
                                       'Year',
                                       min = 2000,
                                       max = 2017,
-                                      value = c(2000, 2017),
+                                      value = 2016,
                                       step = 1,
                                       sep = '')),
                    column(3,
                           radioButtons('dfs_market_overview_view',
                                        label = 'View type',
                                        choices = c('Map view',
-                                                 'Chart view')))
+                                                   'Chart view')))
                  ),
                  fluidRow(
                    uiOutput('df_market_overview_ui')
@@ -79,30 +78,42 @@ body <- dashboardBody(
              tabItem(
                tabName="country_dashboard",
                fluidPage(
-                 tabsetPanel(
-                   tabPanel('Market overview'),
-                   tabPanel('Qualitative overview'),
-                   tabPanel('Additional analyses')
-                 )
+                 fluidRow(uiOutput('country_dashboard_country_ui')),
+                 fluidRow(
+                   tabsetPanel(
+                     tabPanel('Market overview'),
+                     tabPanel('Qualitative overview'),
+                     tabPanel('Additional analyses')
+                   ))
                  
                )
              ),
              tabItem(
                tabName="country_analysis",
                fluidPage(
-                 tabsetPanel(
-                   tabPanel('Recommended analyses'),
-                   tabPanel('Custom analyses')
-                 )
-               )
+                 fluidRow(uiOutput('country_analysis_country_ui')),
+                 fluidRow(
+                   tabsetPanel(
+                     tabPanel('Recommended analyses'),
+                     tabPanel('Custom analyses')
+                   )
+                 ))
              ),
              tabItem(
                tabName="x_market_analysis",
                fluidPage(
-                 tabsetPanel(
-                   tabPanel('Recommended analyses'),
-                   tabPanel('Custom analyses')
-                 )
+                 fluidRow(
+                   selectInput('x_market_analysis_region',
+                               'Region',
+                               choices = sub_regions,
+                               selected = sub_regions,
+                               multiple = TRUE)),
+                 fluidRow(
+                   tabsetPanel(
+                     tabPanel('Recommended analyses'),
+                     tabPanel('Custom analyses')
+                   )
+                 ) 
                )
              ),
              tabItem(
@@ -239,21 +250,98 @@ server <- function(input, output) {
     return(out)
   })
   
+  # Reactive dataset after filtering for region, year and indicator
+  df_filtered <- reactive({
+    selected_sub_regions <- input$dfs_market_overview_region
+    selected_indicator <- input$dfs_market_overview_indicator
+    selected_year <- input$dfs_market_overview_year
+    out <- df %>%
+      filter(sub_region %in% selected_sub_regions,
+             key == selected_indicator,
+             year == selected_year)
+    return(out)
+  })
+  
   output$dfs_market_overview_plot <-
     renderPlot({
-      barplot(1:10)
+      plot_data <- df_filtered()
+      plot_data <- plot_data %>%
+        arrange(value) %>%
+        mutate(country = gsub('_', '\n', country)) 
+      plot_data <- plot_data %>%
+        mutate(country = factor(country,
+                                levels = plot_data$country)) %>%
+        mutate(ranking = 1:nrow(plot_data))
+      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(plot_data))
+      ggplot(data = plot_data,
+             aes(x = country,
+                 y = value)) +
+        geom_bar(stat = 'identity',
+                 aes(fill = factor(ranking))) +
+        theme_landscape() +
+        theme(axis.text.x = element_text(angle = 90)) +
+        labs(x = '',
+             y = '') +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        theme(legend.position = 'none')
     })
   
   output$dfs_market_overview_leaf <-
     renderLeaflet({
       map <- afr()
-      cols <- colorRampPalette(brewer.pal(8, 'YlOrRd'))(nrow(map))
-      leaflet() %>%
-        addProviderTiles('Stamen.TonerLite') %>%
-        addPolygons(data = map,
-                    fillColor = cols,
-                    weight = 0,
-                    fillOpacity = 0.9)
+      # Join to data
+      data <- df_filtered()
+      make_leaf <- function(map, data){
+        
+        # Join data and map
+        map@data <- left_join(map@data,
+                              data %>%
+                                dplyr::select(iso2,
+                                              key,
+                                              value),
+                              by = 'iso2')
+        
+        # Prepare colors
+        bins <- unique(c(0, quantile(map$value, na.rm = TRUE), Inf))
+        pal <- colorBin("YlOrRd", domain = map$value, bins = bins)
+        
+        # Popups
+        avg_val <- mean(map@data$value, na.rm = TRUE)
+        pops <- map@data %>%
+          mutate(average_value = avg_val) %>%
+          mutate(link = 'Click here') %>%
+          dplyr::select(country,
+                        sub_region,
+                        key,
+                        value,
+                        average_value,
+                        link) %>%
+          mutate(value = round(value, digits = 2),
+                 average_value = round(average_value, digits = 2))
+        names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
+        
+        popups = lapply(rownames(pops), function(row){
+          x <- pops[row.names(pops) == row,]
+          htmlTable(x,
+                    rnames = FALSE,
+                    caption = paste0('Some caption'))
+        })
+        
+        
+
+        leaflet() %>%
+          addProviderTiles('Stamen.TonerLite') %>%
+          addPolygons(data = map,
+                      fillColor = ~pal(value),
+                      weight = 0.2,
+                      opacity = 1,
+                      color = "white",
+                      fillOpacity = 0.7,
+                      popup = popups)
+      }
+      make_leaf(map = map, data = data)
+      
     })
   
   # Plot vs. map ui for df_market_overview_plot
@@ -266,6 +354,33 @@ server <- function(input, output) {
         leafletOutput('dfs_market_overview_leaf')
       }
     })
+  
+  # UIs for country inputs
+  country <- reactiveVal(value = countries[1])
+  
+  observeEvent(input$country_dashboard_country, {
+    country(input$country_dashboard_country)
+  })
+  observeEvent(input$country_analysis_country, {
+    country(input$country_analysis_country)
+  })
+  
+  output$country_dashboard_country_ui <- renderUI({
+    selected_country <- country()
+    selectInput('country_dashboard_country',
+                'Country',
+                choices = countries,
+                selected = selected_country,
+                multiple = FALSE)
+  })
+  output$country_analysis_country_ui <- renderUI({
+    selected_country <- country()
+    selectInput('country_analysis_country',
+                'Country',
+                choices = countries,
+                selected = selected_country,
+                multiple = FALSE)
+  })
   
 }
 
