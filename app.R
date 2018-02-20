@@ -1,7 +1,7 @@
 library(shiny)
 library(shinydashboard)
-
-source('global_dummy.R')
+source('functions.R')
+source('global.R')
 
 header <- dashboardHeader(title="DFS Landscape Dashboard")
 sidebar <- dashboardSidebar(
@@ -289,57 +289,11 @@ server <- function(input, output) {
   
   output$dfs_market_overview_leaf <-
     renderLeaflet({
+      # Get map
       map <- afr()
-      # Join to data
+      # Get data
       data <- df_filtered()
-      make_leaf <- function(map, data){
-        
-        # Join data and map
-        map@data <- left_join(map@data,
-                              data %>%
-                                dplyr::select(iso2,
-                                              key,
-                                              value),
-                              by = 'iso2')
-        
-        # Prepare colors
-        bins <- unique(c(0, quantile(map$value, na.rm = TRUE), Inf))
-        pal <- colorBin("YlOrRd", domain = map$value, bins = bins)
-        
-        # Popups
-        avg_val <- mean(map@data$value, na.rm = TRUE)
-        pops <- map@data %>%
-          mutate(average_value = avg_val) %>%
-          mutate(link = 'Click here') %>%
-          dplyr::select(country,
-                        sub_region,
-                        key,
-                        value,
-                        average_value,
-                        link) %>%
-          mutate(value = round(value, digits = 2),
-                 average_value = round(average_value, digits = 2))
-        names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
-        
-        popups = lapply(rownames(pops), function(row){
-          x <- pops[row.names(pops) == row,]
-          htmlTable(x,
-                    rnames = FALSE,
-                    caption = paste0('Some caption'))
-        })
-        
-        
-
-        leaflet() %>%
-          addProviderTiles('Stamen.TonerLite') %>%
-          addPolygons(data = map,
-                      fillColor = ~pal(value),
-                      weight = 0.2,
-                      opacity = 1,
-                      color = "white",
-                      fillOpacity = 0.7,
-                      popup = popups)
-      }
+      # Make choropleth
       make_leaf(map = map, data = data)
       
     })

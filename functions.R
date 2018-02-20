@@ -1,61 +1,56 @@
-library(tidyverse)
-library(broom)
-library(raster)
-library(leaflet)
-library(sp)
-library(rgdal)
-library(readxl)
-library(htmlTable)
-library(leaflet)
-library(RColorBrewer)
+# Make leaflet map
+make_leaf <- function(map, data){
+  require(leaflet)
+  require(RColorBrewer)
+  
+  # Join data and map
+  map@data <- left_join(map@data,
+                        data %>%
+                          dplyr::select(iso2,
+                                        key,
+                                        value),
+                        by = 'iso2')
+  
+  # Prepare colors
+  bins <- unique(c(0, quantile(map$value, na.rm = TRUE), Inf))
+  pal <- colorBin("YlOrRd", domain = map$value, bins = bins)
+  
+  # Popups
+  avg_val <- mean(map@data$value, na.rm = TRUE)
+  pops <- map@data %>%
+    mutate(average_value = avg_val) %>%
+    mutate(link = 'Click here') %>%
+    dplyr::select(country,
+                  sub_region,
+                  key,
+                  value,
+                  average_value,
+                  link) %>%
+    mutate(value = round(value, digits = 2),
+           average_value = round(average_value, digits = 2))
+  names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
+  
+  popups = lapply(rownames(pops), function(row){
+    x <- pops[row.names(pops) == row,]
+    htmlTable(x,
+              rnames = FALSE,
+              caption = paste0('Some caption'))
+  })
+  
+  leaflet() %>%
+    addProviderTiles('Stamen.TonerLite') %>%
+    addPolygons(data = map,
+                fillColor = ~pal(value),
+                weight = 0.2,
+                opacity = 1,
+                color = "white",
+                fillOpacity = 0.7,
+                popup = popups) %>%
+    addLegend(pal = pal, values = ~value, opacity = 0.7, title = NULL,
+              position = "bottomright")
+}
 
-# Load a shapefile of Africa
-africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
-
-# Get countries by region
-countries_by_region <- read_csv('spatial_data/countries_by_region.csv')
-# Keep only Africa and certain columns
-countries_by_region <- countries_by_region %>%
-  filter(region == 'Africa') %>%
-  dplyr::rename(sub_region = `sub-region`,
-                country = name,
-                iso2 = `alpha-2`,
-                iso3 = `alpha-3`) %>%
-  dplyr::filter(sub_region != 'Northern Africa') %>%
-  dplyr::select(country, region, sub_region, iso2, iso3)
-
-# Define a vector of sub_regions
-sub_regions <- sort(unique(countries_by_region$sub_region))
-
-# Join region and country code information to the africa shapefile
-africa@data <- 
-  left_join(africa@data,
-            countries_by_region,
-            by = c('ISO_CC' = 'iso2'))
-africa@data$iso2 <- africa@data$ISO_CC
-
-# Remove all those with no info (ie, north africa)
-africa <- africa[!is.na(africa@data$sub_region),]
-
-# Create some dummy data
-df <- 
-  expand.grid(country = sort(unique(africa@data$COUNTRY)),
-              key = c('Poverty rate',
-                      'Cell phone penetration',
-                      'Access to financial services'),
-              year = c(2000:2016,NA)) %>%
-  left_join(africa@data %>% 
-              filter(!duplicated(COUNTRY)) %>%
-              dplyr::select(COUNTRY, iso2, sub_region),
-            by = c('country' = 'COUNTRY'))
-df$value <- rnorm(mean = 50, n = nrow(df), sd = 15)
-df <- df %>% sample_n(round(0.9 * nrow(df)))
-
-# Create vector of indicators
-indicators <- sort(unique(df$key))
-
-# Create vector of countries
-countries <- sort(unique(df$country))
+# Theme for charts
 
 # Define theme
 theme_landscape <- function (base_size = 15, y_comma = TRUE, white_bg = FALSE, outer_line = FALSE) {
@@ -107,43 +102,3 @@ theme_landscape <- function (base_size = 15, y_comma = TRUE, white_bg = FALSE, o
   return(out)
 }
 
-
-# # Read in the raw data
-# qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                         sheet = 'Qualitative Overview')
-# fas <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                   sheet = 'IMF FAS 2017')
-# afsd <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                    sheet = 'AFSD 2016')
-# findex <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                    sheet = 'Findex')
-# gdp <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                    sheet = 'GDP Growth')
-# gsma_names <- names(read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                                  sheet = 'Unique subsc ', skip = 2)[0,])
-# unique_subscribers <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                   sheet = 'Unique subsc ', skip = 3)
-# names(gsma) <- gsma_names; rm(gsma_names)
-# 
-# gsma_names <- names(read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                                sheet = 'Smartphone adoption', skip = 2)[0,])
-# smartphone_adoption <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                                  sheet = 'Smartphone adoption', skip = 3)
-# names(smartphone_adoption) <- gsma_names; rm(gsma_names)
-# 
-# tech_hubs <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                   sheet = 'tech hubs', skip = 2) 
-# tech_hubs <- tech_hubs[,(ncol(tech_hubs) - c(1,0))]
-# names(tech_hubs) <- c('country', 'hubs')
-# ufa <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                   sheet = 'UFA 2014')
-# 
-# # Ignoring these for now due to double headers
-# # gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-# #                   sheet = 'GPPS Accounts')
-# # gpss_access_points <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-# #                             sheet = 'GPPS Accounts')
-# gpss_retail_transactions <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                             sheet = 'GPSS Retail transactions')
-# wb_dev <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-#                             sheet = 'WBDev Ind')

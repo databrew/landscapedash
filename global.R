@@ -6,15 +6,63 @@ library(sp)
 library(rgdal)
 library(readxl)
 library(Hmisc)
+library(htmlTable)
+library(leaflet)
+library(RColorBrewer)
 
 # Load a shapefile of Africa
-africa <- rgdal::readOGR('spatial_data/africa_shp', 'AfricanCountries')
+africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
+
+# Get countries by region
+countries_by_region <- read_csv('spatial_data/countries_by_region.csv')
+# Keep only Africa and certain columns
+countries_by_region <- countries_by_region %>%
+  filter(region == 'Africa') %>%
+  dplyr::rename(sub_region = `sub-region`,
+                country = name,
+                iso2 = `alpha-2`,
+                iso3 = `alpha-3`) %>%
+  dplyr::filter(sub_region != 'Northern Africa') %>%
+  dplyr::select(country, region, sub_region, iso2, iso3)
+
+# Define a vector of sub_regions
+sub_regions <- sort(unique(countries_by_region$sub_region))
+
+# Join region and country code information to the africa shapefile
+africa@data <- 
+  left_join(africa@data,
+            countries_by_region,
+            by = c('ISO_CC' = 'iso2'))
+africa@data$iso2 <- africa@data$ISO_CC
+
+# Remove all those with no info (ie, north africa)
+africa <- africa[!is.na(africa@data$sub_region),]
+
+# Create some dummy data
+df <- 
+  expand.grid(country = sort(unique(africa@data$COUNTRY)),
+              key = c('Poverty rate',
+                      'Cell phone penetration',
+                      'Access to financial services'),
+              year = c(2000:2016,NA)) %>%
+  left_join(africa@data %>% 
+              filter(!duplicated(COUNTRY)) %>%
+              dplyr::select(COUNTRY, iso2, sub_region),
+            by = c('country' = 'COUNTRY'))
+df$value <- rnorm(mean = 50, n = nrow(df), sd = 15)
+df <- df %>% sample_n(round(0.9 * nrow(df)))
+
+# Create vector of indicators
+indicators <- sort(unique(df$key))
+
+# Create vector of countries
+countries <- sort(unique(df$country))
 
 ##########
 # read in and clean qualiative overview data
 ##########
 # Questions for joe: the "value" in this data set is not not numeric. Do we keep it?
-
+# Yes, separate dataset
 qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                     sheet = 'Qualitative Overview')
 
