@@ -44,15 +44,32 @@ body <- dashboardBody(
     ),
     tabItem(
       tabName="country_dashboard",
-      fluidPage()
+      fluidPage(
+        tabsetPanel(
+          tabPanel('Market overview'),
+          tabPanel('Qualitative overview'),
+          tabPanel('Additional analyses')
+        )
+        
+      )
     ),
     tabItem(
       tabName="country_analysis",
-      fluidPage()
+      fluidPage(
+        tabsetPanel(
+          tabPanel('Recommended analyses'),
+          tabPanel('Custom analyses')
+        )
+      )
     ),
     tabItem(
       tabName="x_market_analysis",
-      fluidPage()
+      fluidPage(
+        tabsetPanel(
+          tabPanel('Recommended analyses'),
+          tabPanel('Custom analyses')
+        )
+      )
     ),
     tabItem(
       tabName="glossary",
