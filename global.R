@@ -5,15 +5,59 @@ library(leaflet)
 library(sp)
 library(rgdal)
 library(readxl)
+library(reshape2)
 
 # Load a shapefile of Africa
 africa <- rgdal::readOGR('spatial_data', 'AfricanCountries')
 
-# Read in the raw data
+##########
+# read in qualiative overview data
+##########
 qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                         sheet = 'Qualitative Overview')
+
+# this data seems to contain only long character strings as variables, not sure if its useful for anything.
+# first remove columns that are entirely NA
+qualy <- qualy[,colSums(is.na(qualy))<nrow(qualy)]
+
+# replace N/A with NA 
+qualy <- as.data.frame(apply(qualy, 2, function(x){
+  gsub('N/A', NA, x)
+}), stringsAsFactors = F)
+
+# rename first variblle to be country
+colnames(qualy)[1] <- 'country'
+
+# melt data into long format 
+qualy <- melt(qualy, id.vars = 'country')
+
+# add a year variable with all NAs 
+qualy$year <- NA
+
+
+##########
+# read in IMF FAS 2017 data
+##########
 fas <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                   sheet = 'IMF FAS 2017')
+
+# This data has info on ATM transactions and online mobile banking
+# change first column name to country 
+names(fas)[1] <- 'country'
+names(fas)[2] <- 'year'
+
+
+# make all but the first two columns numeric
+fas[, 3:ncol(fas)] <- as.data.frame(apply(fas[, 3:ncol(fas)], 2, function(x){
+  round(as.numeric(x), 2)
+}))
+
+# melt data to long form
+temp <- melt(fas, id.vars = c('country', 'year'))
+
+
+
+
 afsd <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                    sheet = 'AFSD 2016')
 findex <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
