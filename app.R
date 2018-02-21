@@ -39,7 +39,7 @@ body <- dashboardBody(
     tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
   ),
   fluidPage(
-    column(10,
+    column(12,
            tabItems(
              tabItem(
                tabName="dfs_market_overivew",
@@ -56,9 +56,9 @@ body <- dashboardBody(
                    column(3,
                           sliderInput('dfs_market_overview_year',
                                       'Year',
-                                      min = 2000,
-                                      max = 2017,
-                                      value = 2016,
+                                      min = min(df$year, na.rm = TRUE),
+                                      max = max(df$year, na.rm = TRUE),
+                                      value = 2017,
                                       step = 1,
                                       sep = '')),
                    column(3,
@@ -203,10 +203,7 @@ body <- dashboardBody(
                  )
                )
              )
-           )),
-    column(2,
-           div(actionButton('download', 'Download', icon = icon('download')),
-               style = 'text-align:center;'))
+           ))
   )
 )
 
@@ -334,7 +331,7 @@ server <- function(input, output) {
           geom_bar(stat = 'identity',
                    aes(fill = factor(ranking))) +
           theme_landscape() +
-          theme(axis.text.x = element_text(angle = 90)) +
+          theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
           labs(x = '',
                y = '') +
           scale_fill_manual(name = '',
@@ -391,7 +388,7 @@ server <- function(input, output) {
       map <- afr()
       coords <- coordinates(map)
       l <- leaflet() %>%
-        addTiles()
+        addProviderTiles('Stamen.TonerLite')
       if(nrow(coords) > 0){
         l <- l %>%
           fitBounds(min(coords[,1], na.rm = TRUE),

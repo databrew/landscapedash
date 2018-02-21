@@ -19,6 +19,16 @@ if('prepared_data.RData' %in% dir()){
   
   # Get countries by region
   countries_by_region <- read_csv('spatial_data/countries_by_region.csv')
+  # Replace "Middle Africa" with "Central Africa"
+  countries_by_region$`sub-region` <-
+    ifelse(countries_by_region$`sub-region` == 'Middle Africa',
+           'Central Africa',
+           countries_by_region$`sub-region`)
+  countries_by_region$`sub-region` <- 
+    gsub('Western ', 'West ', countries_by_region$`sub-region`)
+  countries_by_region$`sub-region` <- 
+    gsub('Eastern ', 'East ', countries_by_region$`sub-region`)
+  
   # Keep only Africa and certain columns
   countries_by_region <- countries_by_region %>%
     filter(region == 'Africa') %>%
@@ -490,3 +500,6 @@ sub_regions <- sort(unique(countries_by_region$sub_region))
 africa <- africa[!(africa@data$sub_region == 'Western Africa' &
                      coordinates(africa)[,2] < 0),]
 africa <- africa[!coordinates(africa)[,2] < -35,]
+
+# Make sure year is numeric
+df$year <- as.numeric(as.character(df$year))
