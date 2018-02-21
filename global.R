@@ -29,9 +29,6 @@ if('prepared_data.RData' %in% dir()){
     dplyr::filter(sub_region != 'Northern Africa') %>%
     dplyr::select(country, region, sub_region, iso2, iso3)
   
-  # Define a vector of sub_regions
-  sub_regions <- sort(unique(countries_by_region$sub_region))
-  
   # Join region and country code information to the africa shapefile
   africa@data <- 
     left_join(africa@data,
@@ -464,6 +461,7 @@ if('prepared_data.RData' %in% dir()){
        df,
        df_qualy, 
        df_regional,
+       countries_by_region,
        file = 'prepared_data.RData')
 }
 
@@ -485,3 +483,10 @@ countries <- sort(unique(df$country))
 # Create a vector of years
 years <- sort(unique(df$year))
 
+# Define a vector of sub_regions
+sub_regions <- sort(unique(countries_by_region$sub_region))
+
+# Manual removal of bizarre west african values
+africa <- africa[!(africa@data$sub_region == 'Western Africa' &
+                     coordinates(africa)[,2] < 0),]
+africa <- africa[!coordinates(africa)[,2] < -35,]

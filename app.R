@@ -298,12 +298,17 @@ server <- function(input, output) {
   df_filtered <- reactive({
     selected_sub_regions <- input$dfs_market_overview_region
     selected_key <- input$dfs_market_overview_indicator
-    message('selected indicator is ', selected_key)
     selected_year <- input$dfs_market_overview_year
+
     out <- df %>%
       filter(sub_region %in% selected_sub_regions,
-             key == selected_key,
-             year == selected_year) %>%
+             year == selected_year)
+    if(is.null(selected_key)){
+      selected_key <- out$key[1]
+      
+    }
+    out <- out %>%
+      filter(key == selected_key) %>%
       # Keep only one observation per country/key/year combination
       distinct(country, key, year, .keep_all = TRUE)
     message('df filtered is ')
@@ -342,20 +347,6 @@ server <- function(input, output) {
       
     })
   
-  output$dfs_market_overview_leaf <-
-    renderLeaflet({
-      # Get map
-      map <- afr()
-      # Get data
-      data <- df_filtered()
-      
-      if(!is.null(map) & !is.null(data)){
-        if(nrow(map) > 0 & nrow(data) > 0){
-          # Make choropleth
-          make_leaf(map = map, data = data)
-        }
-      }
-    })
   
   # Plot vs. map ui for df_market_overview_plot
   output$df_market_overview_ui <- 
@@ -394,6 +385,90 @@ server <- function(input, output) {
                 selected = selected_country,
                 multiple = FALSE)
   })
+  
+  output$dfs_market_overview_leaf <-
+    renderLeaflet({
+      # Get map
+      map <- afr()
+      coords <- coordinates(map)
+      l <- leaflet() %>%
+        addTiles()
+      if(nrow(coords) > 0){
+        l <- l %>%
+          fitBounds(min(coords[,1], na.rm = TRUE),
+                    min(coords[,2], na.rm = TRUE),
+                    max(coords[,1], na.rm = TRUE),
+                    max(coords[,2], na.rm = TRUE))
+      }
+      return(l)
+    })
+  
+  observeEvent(
+    {input$dfs_market_overview_indicator;
+      input$dfs_market_overview_year
+      }, {
+        year <- input$dfs_market_overview_year
+        print('YEAR IS ')
+        print(year)
+      data <- df_filtered()
+      map <- afr()
+      
+      if(nrow(data) > 0 & nrow(map) > 0){
+        # Join data and map
+        map@data <- left_join(map@data,
+                              data %>%
+                                dplyr::select(iso2,
+                                              key,
+                                              value) %>%
+                                distinct(iso2,
+                                         key, .keep_all = TRUE))
+        
+        # Prepare colors
+        vals <- map@data$value
+        if(all(is.na(vals))){
+          vals <- 1
+        }
+        pal <- colorNumeric(
+          palette = "YlOrRd",
+          domain = vals)
+        
+        # Popups
+        avg_val <- mean(map@data$value, na.rm = TRUE)
+        pops <- map@data %>%
+          mutate(average_value = avg_val) %>%
+          mutate(link = 'Click here') %>%
+          dplyr::select(country,
+                        sub_region,
+                        key,
+                        value,
+                        average_value,
+                        link) %>%
+          mutate(value = round(value, digits = 2),
+                 average_value = round(average_value, digits = 2))
+        names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
+        popups <- lapply(rownames(pops), function(row){
+          knitr::kable(pops[row.names(pops) == row,], format = 'html')
+        })
+        
+        
+        
+        leafletProxy('dfs_market_overview_leaf') %>% 
+          clearControls() %>%
+          clearPopups() %>%
+          clearShapes() %>%
+          addPolygons(data = map,
+                      stroke = FALSE, 
+                      smoothFactor = 0.2, 
+                      fillOpacity = 0.7,
+                      color = ~pal(value),
+                      popup = popups)
+        # addLegend(pal = pal, values = ~value, opacity = 0.7, 
+        #           position = "bottomright",
+        #           # title = title, # too wide!
+        #           title = NULL)
+      }
+    })
+  
   
 }
 
