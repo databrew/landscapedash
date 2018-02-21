@@ -65,8 +65,7 @@ body <- dashboardBody(
                           radioButtons('dfs_market_overview_view',
                                        label = 'View type',
                                        choices = c('Map view',
-                                                   'Chart view'),
-                                       selected = 'Chart view'))
+                                                   'Chart view')))
                  ),
                  fluidRow(
                    uiOutput('df_market_overview_ui')
@@ -404,9 +403,8 @@ server <- function(input, output) {
     })
   
   observeEvent(
-    {input$dfs_market_overview_indicator;
-      input$dfs_market_overview_year
-      }, {
+    c(input$dfs_market_overview_indicator,
+      input$dfs_market_overview_year), {
         year <- input$dfs_market_overview_year
         print('YEAR IS ')
         print(year)
@@ -451,8 +449,8 @@ server <- function(input, output) {
         })
         
         
-        
-        leafletProxy('dfs_market_overview_leaf') %>% 
+      
+        l <- leafletProxy('dfs_market_overview_leaf') %>% 
           clearControls() %>%
           clearPopups() %>%
           clearShapes() %>%
@@ -462,10 +460,13 @@ server <- function(input, output) {
                       fillOpacity = 0.7,
                       color = ~pal(value),
                       popup = popups)
-        # addLegend(pal = pal, values = ~value, opacity = 0.7, 
-        #           position = "bottomright",
-        #           # title = title, # too wide!
-        #           title = NULL)
+        l <- l %>%
+          addLegend(pal = pal, values = map@data$value, opacity = 0.7,
+                    position = "bottomright",
+                    # title = title, # too wide!
+                    title = NULL)
+        return(l)
+        
       }
     })
   
