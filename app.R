@@ -78,7 +78,19 @@ body <- dashboardBody(
                  fluidRow(uiOutput('country_dashboard_country_ui')),
                  fluidRow(
                    tabsetPanel(
-                     tabPanel('Market overview'),
+                     tabPanel('Market overview',
+                              fluidRow(column(6,
+                                              DT::dataTableOutput('tab_mm_mkt')),
+                                       column(6,
+                                              DT::dataTableOutput('tab_mm_pen')
+                                       )),
+                              fluidRow(column(4,
+                                              plotOutput('plot_mm_mkt')),
+                                       column(4,
+                                              plotOutput('plot_mm_trans')),
+                                       column(4, 
+                                              plotOutput('plot_mm_ssa'))
+                                       )),
                      tabPanel('Qualitative overview'),
                      tabPanel('Additional analyses')
                    ))
@@ -466,6 +478,99 @@ server <- function(input, output) {
         
       }
     })
+  
+  # reactive object that filters by country
+  all_country <- reactive({
+    selected_country <- country()
+    sub_country <- df %>% dplyr::filter(grepl(selected_country, df$country))
+    
+    # create 
+  })
+  
+  # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
+  # and (2) the last two, the drivers of dfs growth
+  
+  # table 1
+  output$tab_mm_mkt <- renderDataTable({
+
+    # subset data by country
+    sub_dat <- all_country()
+    if(is.null(sub_dat)){
+      return(NULL)
+    } else {
+      
+      # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+      new_name = c("Active MM Accounts", "MM Transaction Volume", "MM Transaction Value USD",'Credit Card Volume',
+                   'Debit Card Volume', 'Total Credit Card Value (USD)', 'Total Debit Card Value (USD)', 'Total Credit Card Internet Value (USD)',
+                   'Total Debit Card Internet Value (USD)', "Total MM Agents", "Number of Banks", "Number of ATMs", "Total Volume Debit Card POS", 
+                   "Total Volume Credit Card POS", "Total Volume E Card POS") 
+      
+      dat_name = c("Mobile money accounts: active", "Mobile money transactions: number", "Mobile money transactions: value", "Volume Credit card", "Volume Debit card",
+                   "Value in USD Credit card", "Value in USD Debit card", "Value in USD Credit card internet" , "Value in USD Debit card internet","Mobile money agent outlets:
+                   registered", "Number of bank branches in Number", "Number of ATMs in NA","Volume Debit card pos", "Volume E money card pos", "Volume Credit card pos" )
+      
+      new_table = data.frame(dat_name, new_name)  
+      
+      # first need to subset data by throwing away years over 2017 (except for GDP forecast) - They say in pdf they want to be able to grab data where the latest is available, if 2016 is not available - that's what I do below by first remove all the forecast columns (2018 - 2022) and then removing NAs and duplcates, because year is already sorted.
+      sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+      
+      # subset data frame by all the variable we need 
+      var_string <- "Mobile money accounts: active|Mobile money transactions: number|Mobile money transactions: value|Volume Credit card|Volume Debit card|Value in USD Credit card|Value in USD Credit card|Value in USD Credit card internet|Value in USD Debit card internet|Mobile money agent outlets: registered|Number of bank branches in Number| Number of ATMs in NA|Volume Debit card pos|Volume E money card pos|Volume Credit card pos"
+      
+      # subset by var_string 
+      sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+      
+      # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
+      sub_dat <- sub_dat[complete.cases(sub_dat),]
+      sub_dat <- sub_dat[!duplicated(sub_dat$key),]
+      
+      # remove unneed colmns 
+      sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
+      
+      # IN PDF THEY WANT THE SUM OF THE CREDIT AND DEBIT CARDS FOR A BUNCH OF STUFF - FOR NOW IM ADDING IN ALL THE VARIABLES AND IF I HAVE TIME ILL SUM THEM
+      # # create total card payment variable
+      # if(is.null(sub_spread$`Volume Credit card`) | is.null(sub_spread$`Volume Debit card`)){
+      #   sub_spread$`Total Card Payment` <- NA
+      # } else {
+      #   sub_spread$`Total Card Payment` <- sub_spread$`Volume Credit card` + sub_spread$`Volume Debit card`
+      # }
+      # 
+      # transpose 
+      
+      # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
+      final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
+      
+      # rempove dat_name column and fill NA with "NA"
+      final_table$dat_name <- NULL
+      final_table[is.na(final_table)] <- 'NA'
+      
+      
+      out <- DT::datatable(final_table, colnames = c('', ''))
+      return(out)
+    }
+    
+    
+  })
+  
+  # Note on Market penetration is the percentage of a target market that consumes a product or service. Market penetration can also be a measure of one company's sales as a percentage of all sales for a product. In a broad sense, market penetration is a measure of individuals in a target market who consume something versus those who do not. 
+  # number of people who bought over population of country?
+    
+  # table 2
+  output$tab_mm_mkt <- renderDataTable({
+    sub_dat <- all_country()
+    # get data on unique mobile phone penetration, smartphone penetration, and % of adults with FI account, tech hubs,
+    # adult population, GDP (PPP USD), GDP Growth forcast, Bank assets/GDP, Number of unbanked, % of population living below 1.9 PPF, Share of uban population, Literacy Rate
+    
+    # 1st part: "Mobile account (% age 15+) [w2]", ("Q1 Percentage with Smart Phone" "Q2 Percentage with Smart Phone" "Q3 Percentage with Smart Phone" "Q4 Percentage with Smart Phone"), "Account at a financial institution (% age 15+) [ts]", "Tech Hubs"
+    
+    # 2nd part: "Population ages 0-14, total" (only population variable i could find), "GDP (current US$)" (no forecast variable), "Real GDP Growth (Annual Percent Change)" (for 2020), "Assets \nas % of GDP in as % of GDP", "# of unbanked adults", "Poverty gap at $1.90 a day (2011 PPP) (%)"
+  
+    
+    
+  })
+  
+  
+  
   
   
 }

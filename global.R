@@ -208,6 +208,8 @@ if('prepared_data.RData' %in% dir()){
   names(gdp)[1] <- 'country'
   gdp$key <- 'Real GDP Growth (Annual Percent Change)'
   
+  # 
+  
   # make data long with gatherm and name "key" "year", since those are the column names 
   gdp <- gather(gdp, year, value, `1980`:`2022`) # are the future years projections?
   
@@ -294,7 +296,6 @@ if('prepared_data.RData' %in% dir()){
   
   # extract the Q information out of the year variable 
   smart_phone_adoption$year <- substr(smart_phone_adoption$year, 4, 7)
-  
   
   # clean country column
   smart_phone_adoption$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", smart_phone_adoption$country)
