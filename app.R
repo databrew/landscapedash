@@ -55,7 +55,7 @@ body <- dashboardBody(
                           uiOutput('dfs_market_overview_indicator_ui')),
                    column(3,
                           sliderInput('dfs_market_overview_year',
-                                      'Year',
+                                      'Select a year',
                                       min = min(df$year, na.rm = TRUE),
                                       max = max(df$year, na.rm = TRUE),
                                       value = 2017,
