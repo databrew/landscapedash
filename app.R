@@ -156,7 +156,19 @@ body <- dashboardBody(
                                 )
                               )
                               ),
-                     tabPanel('Qualitative overview'),
+                     tabPanel('Qualitative overview',
+                              br(),
+                              shinydashboard::box(
+                                title = NULL,
+                                footer = '',
+                                status = 'warning',
+                                solidHeader = TRUE,
+                                background = NULL,
+                                width = 12,
+                                collapsible = TRUE,
+                                collapsed = FALSE,
+                                DT::dataTableOutput('qualitative_overview')
+                              )),
                      tabPanel('Additional analyses')
                    ))
                  
@@ -599,7 +611,7 @@ server <- function(input, output) {
     new_table = data.frame(dat_name, new_name)  
     
     
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 3)
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 1)
     
     # Keep only most recent year
     most_recent <- max(sub_dat$year, na.rm = TRUE)
@@ -657,7 +669,7 @@ server <- function(input, output) {
     
     new_table = data.frame(dat_name, new_name)  
     
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 3)
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 1)
     
     # Keep only most recent year
     most_recent <- max(sub_dat$year, na.rm = TRUE)
@@ -707,7 +719,7 @@ server <- function(input, output) {
               "Mobile account, female % age 15 w2", "Debit card % age 15 ts",
               "Credit card % age 15 ts")
               
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) -3)
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) -1)
 
     # keep only relevant indicators
     sub_dat <- sub_dat %>%
@@ -756,8 +768,7 @@ server <- function(input, output) {
                           values = cols) +
         theme(axis.text.x = element_text(
                                          size = 12)) +
-        theme(legend.position = 'none') +
-        geom_label(aes(label = value))
+        theme(legend.position = 'none') 
     }
     
   })
@@ -780,7 +791,7 @@ server <- function(input, output) {
             
 
     # filter by year
-    sub_dat <- sub_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 3)
+    sub_dat <- sub_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 1)
 
     # keep only relevant indicators
     sub_dat <- sub_dat %>%
@@ -828,8 +839,7 @@ server <- function(input, output) {
         scale_fill_manual(name = '',
                           values = cols) +
         theme(axis.text.x = element_text(
-                                         size = 12)) +
-        geom_label(aes(label = value))
+                                         size = 12)) 
     }
     
     
@@ -863,7 +873,7 @@ server <- function(input, output) {
       filter(!is.na(value))
     
     # subset for year
-    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 3)
+    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 1)
     
     
     # Keep only most recent year
@@ -945,7 +955,7 @@ server <- function(input, output) {
       filter(!is.na(value))
     
     # subset by year
-    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 3)
+    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 1)
     
     
     # Keep only most recent year
@@ -995,9 +1005,16 @@ server <- function(input, output) {
         theme(axis.text.x = element_text(
                                          size = 12)) 
     }
-    
-    
   })
+  
+  output$qualitative_overview <-
+    DT::renderDataTable({
+      this_country <- country()
+      df_qualy %>%
+        filter(country == this_country) %>%
+        dplyr::select(key, value) %>% 
+        dplyr::filter(!is.na(value))    
+      })
   
   
 }
