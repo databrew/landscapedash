@@ -78,19 +78,20 @@ body <- dashboardBody(
                  fluidRow(uiOutput('country_dashboard_country_ui')),
                  fluidRow(
                    tabsetPanel(
-                     tabPanel('Market overview',
-                              fluidRow(column(6,
-                                              DT::dataTableOutput('tab_mm_mkt')),
-                                       column(6,
-                                              DT::dataTableOutput('tab_mm_pen')
-                                       )),
-                              fluidRow(column(4,
-                                              plotOutput('plot_mm_mkt')),
-                                       column(4,
-                                              plotOutput('plot_mm_trans')),
-                                       column(4, 
-                                              plotOutput('plot_mm_ssa'))
-                                       )),
+                     tabPanel('Market overview'),
+                     # tabPanel('Market overview',
+                     #          fluidRow(column(6,
+                     #                          DT::dataTableOutput('tab_mm_mkt')),
+                     #                   column(6,
+                     #                          DT::dataTableOutput('tab_mm_pen')
+                     #                   )),
+                     #          fluidRow(column(4,
+                     #                          plotOutput('plot_mm_mkt')),
+                     #                   column(4,
+                     #                          plotOutput('plot_mm_trans')),
+                     #                   column(4, 
+                     #                          plotOutput('plot_mm_ssa'))
+                     #                   )),
                      tabPanel('Qualitative overview'),
                      tabPanel('Additional analyses')
                    ))
@@ -290,7 +291,7 @@ server <- function(input, output) {
                   'Indicator',
                   choices = available_indicators)
     }
-
+    
     
   })
   
@@ -307,7 +308,7 @@ server <- function(input, output) {
     selected_sub_regions <- input$dfs_market_overview_region
     selected_key <- input$dfs_market_overview_indicator
     selected_year <- input$dfs_market_overview_year
-
+    
     out <- df %>%
       filter(sub_region %in% selected_sub_regions,
              year == selected_year)
@@ -419,67 +420,67 @@ server <- function(input, output) {
         year <- input$dfs_market_overview_year
         print('YEAR IS ')
         print(year)
-      data <- df_filtered()
-      map <- afr()
-      
-      if(nrow(data) > 0 & nrow(map) > 0){
-        # Join data and map
-        map@data <- left_join(map@data,
-                              data %>%
-                                dplyr::select(iso2,
-                                              key,
-                                              value) %>%
-                                distinct(iso2,
-                                         key, .keep_all = TRUE))
+        data <- df_filtered()
+        map <- afr()
         
-        # Prepare colors
-        vals <- map@data$value
-        if(all(is.na(vals))){
-          vals <- 1
+        if(nrow(data) > 0 & nrow(map) > 0){
+          # Join data and map
+          map@data <- left_join(map@data,
+                                data %>%
+                                  dplyr::select(iso2,
+                                                key,
+                                                value) %>%
+                                  distinct(iso2,
+                                           key, .keep_all = TRUE))
+          
+          # Prepare colors
+          vals <- map@data$value
+          if(all(is.na(vals))){
+            vals <- 1
+          }
+          pal <- colorNumeric(
+            palette = "YlOrRd",
+            domain = vals)
+          
+          # Popups
+          avg_val <- mean(map@data$value, na.rm = TRUE)
+          pops <- map@data %>%
+            mutate(average_value = avg_val) %>%
+            mutate(link = 'Click here') %>%
+            dplyr::select(country,
+                          sub_region,
+                          key,
+                          value,
+                          average_value,
+                          link) %>%
+            mutate(value = round(value, digits = 2),
+                   average_value = round(average_value, digits = 2))
+          names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
+          popups <- lapply(rownames(pops), function(row){
+            knitr::kable(pops[row.names(pops) == row,], format = 'html')
+          })
+          
+          
+          
+          l <- leafletProxy('dfs_market_overview_leaf') %>% 
+            clearControls() %>%
+            clearPopups() %>%
+            clearShapes() %>%
+            addPolygons(data = map,
+                        stroke = FALSE, 
+                        smoothFactor = 0.2, 
+                        fillOpacity = 0.7,
+                        color = ~pal(value),
+                        popup = popups)
+          l <- l %>%
+            addLegend(pal = pal, values = map@data$value, opacity = 0.7,
+                      position = "bottomright",
+                      # title = title, # too wide!
+                      title = NULL)
+          return(l)
+          
         }
-        pal <- colorNumeric(
-          palette = "YlOrRd",
-          domain = vals)
-        
-        # Popups
-        avg_val <- mean(map@data$value, na.rm = TRUE)
-        pops <- map@data %>%
-          mutate(average_value = avg_val) %>%
-          mutate(link = 'Click here') %>%
-          dplyr::select(country,
-                        sub_region,
-                        key,
-                        value,
-                        average_value,
-                        link) %>%
-          mutate(value = round(value, digits = 2),
-                 average_value = round(average_value, digits = 2))
-        names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
-        popups <- lapply(rownames(pops), function(row){
-          knitr::kable(pops[row.names(pops) == row,], format = 'html')
-        })
-        
-        
-      
-        l <- leafletProxy('dfs_market_overview_leaf') %>% 
-          clearControls() %>%
-          clearPopups() %>%
-          clearShapes() %>%
-          addPolygons(data = map,
-                      stroke = FALSE, 
-                      smoothFactor = 0.2, 
-                      fillOpacity = 0.7,
-                      color = ~pal(value),
-                      popup = popups)
-        l <- l %>%
-          addLegend(pal = pal, values = map@data$value, opacity = 0.7,
-                    position = "bottomright",
-                    # title = title, # too wide!
-                    title = NULL)
-        return(l)
-        
-      }
-    })
+      })
   
   # reactive object that filters by country
   all_country <- reactive({
@@ -494,60 +495,60 @@ server <- function(input, output) {
   
   # table 1
   output$tab_mm_mkt <- renderDataTable({
-
-      sub_dat <- all_country()
-      # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-      new_name = c("Active MM Accounts", "MM Transaction Volume", "MM Transaction Value USD",'Credit Card Volume',
-                   'Debit Card Volume', 'Total Credit Card Value (USD)', 'Total Debit Card Value (USD)', 'Total Credit Card Internet Value (USD)',
-                   'Total Debit Card Internet Value (USD)', "Total MM Agents", "Number of Banks", "Number of ATMs", "Total Volume Debit Card POS", 
-                   "Total Volume Credit Card POS", "Total Volume E Card POS") 
-      
-      dat_name = c("Mobile money accounts: active", "Mobile money transactions: number", "Mobile money transactions: value", "Volume Credit card", "Volume Debit card",
-                   "Value in USD Credit card", "Value in USD Debit card", "Value in USD Credit card internet" , "Value in USD Debit card internet","Mobile money agent outlets:
-                   registered", "Number of bank branches in Number", "Number of ATMs in NA","Volume Debit card pos", "Volume E money card pos", "Volume Credit card pos" )
-      
-      new_table = data.frame(dat_name, new_name)  
-      
-      # first need to subset data by throwing away years over 2017 (except for GDP forecast) - They say in pdf they want to be able to grab data where the latest is available, if 2016 is not available - that's what I do below by first remove all the forecast columns (2018 - 2022) and then removing NAs and duplcates, because year is already sorted.
-      sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
-      
-      # subset data frame by all the variable we need 
-      var_string <- "Mobile money accounts: active|Mobile money transactions: number|Mobile money transactions: value|Volume Credit card|Volume Debit card|Value in USD Credit card|Value in USD Credit card|Value in USD Credit card internet|Value in USD Debit card internet|Mobile money agent outlets: registered|Number of bank branches in Number| Number of ATMs in NA|Volume Debit card pos|Volume E money card pos|Volume Credit card pos"
-      
-      # subset by var_string 
-      sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-      
-      # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
-      sub_dat <- sub_dat[complete.cases(sub_dat),]
-      sub_dat <- sub_dat[!duplicated(sub_dat$key),]
-      
-      # remove unneed colmns 
-      sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
-      
-      # IN PDF THEY WANT THE SUM OF THE CREDIT AND DEBIT CARDS FOR A BUNCH OF STUFF - FOR NOW IM ADDING IN ALL THE VARIABLES AND IF I HAVE TIME ILL SUM THEM
-      # # create total card payment variable
-      # if(is.null(sub_spread$`Volume Credit card`) | is.null(sub_spread$`Volume Debit card`)){
-      #   sub_spread$`Total Card Payment` <- NA
-      # } else {
-      #   sub_spread$`Total Card Payment` <- sub_spread$`Volume Credit card` + sub_spread$`Volume Debit card`
-      # }
-      # 
-      # transpose 
-      
-      # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
-      final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
-      
-      # rempove dat_name column and fill NA with "NA"
-      final_table$dat_name <- NULL
-      final_table[is.na(final_table)] <- 'NA'
-      
-      DT::datatable(final_table, colnames = c('', ''))
-      
+    
+    sub_dat <- all_country()
+    # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    new_name = c("Active MM Accounts", "MM Transaction Volume", "MM Transaction Value USD",'Credit Card Volume',
+                 'Debit Card Volume', 'Total Credit Card Value (USD)', 'Total Debit Card Value (USD)', 'Total Credit Card Internet Value (USD)',
+                 'Total Debit Card Internet Value (USD)', "Total MM Agents", "Number of Banks", "Number of ATMs", "Total Volume Debit Card POS", 
+                 "Total Volume Credit Card POS", "Total Volume E Card POS") 
+    
+    dat_name = c("Mobile money accounts: active", "Mobile money transactions: number", "Mobile money transactions: value", "Volume Credit card", "Volume Debit card",
+                 "Value in USD Credit card", "Value in USD Debit card", "Value in USD Credit card internet" , "Value in USD Debit card internet","Mobile money agent outlets:
+                 registered", "Number of bank branches in Number", "Number of ATMs in NA","Volume Debit card pos", "Volume E money card pos", "Volume Credit card pos" )
+    
+    new_table = data.frame(dat_name, new_name)  
+    
+    # first need to subset data by throwing away years over 2017 (except for GDP forecast) - They say in pdf they want to be able to grab data where the latest is available, if 2016 is not available - that's what I do below by first remove all the forecast columns (2018 - 2022) and then removing NAs and duplcates, because year is already sorted.
+    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    
+    # subset data frame by all the variable we need 
+    var_string <- "Mobile money accounts: active|Mobile money transactions: number|Mobile money transactions: value|Volume Credit card|Volume Debit card|Value in USD Credit card|Value in USD Credit card|Value in USD Credit card internet|Value in USD Debit card internet|Mobile money agent outlets: registered|Number of bank branches in Number| Number of ATMs in NA|Volume Debit card pos|Volume E money card pos|Volume Credit card pos"
+    
+    # subset by var_string 
+    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+    
+    # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
+    sub_dat <- sub_dat[complete.cases(sub_dat),]
+    sub_dat <- sub_dat[!duplicated(sub_dat$key),]
+    
+    # remove unneed colmns 
+    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
+    
+    # IN PDF THEY WANT THE SUM OF THE CREDIT AND DEBIT CARDS FOR A BUNCH OF STUFF - FOR NOW IM ADDING IN ALL THE VARIABLES AND IF I HAVE TIME ILL SUM THEM
+    # # create total card payment variable
+    # if(is.null(sub_spread$`Volume Credit card`) | is.null(sub_spread$`Volume Debit card`)){
+    #   sub_spread$`Total Card Payment` <- NA
+    # } else {
+    #   sub_spread$`Total Card Payment` <- sub_spread$`Volume Credit card` + sub_spread$`Volume Debit card`
+    # }
+    # 
+    # transpose 
+    
+    # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
+    final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
+    
+    # rempove dat_name column and fill NA with "NA"
+    final_table$dat_name <- NULL
+    final_table[is.na(final_table)] <- 'NA'
+    
+    DT::datatable(final_table, colnames = c('', ''))
+    
   })
   
   # Note on Market penetration is the percentage of a target market that consumes a product or service. Market penetration can also be a measure of one company's sales as a percentage of all sales for a product. In a broad sense, market penetration is a measure of individuals in a target market who consume something versus those who do not. 
   # number of people who bought over population of country?
-    
+  
   # table 2
   output$tab_mm_mkt <- renderDataTable({
     sub_dat <- all_country()
@@ -562,7 +563,7 @@ server <- function(input, output) {
                  "Literacy rate, adult total % of people ages 15 and above")
     
     new_table = data.frame(dat_name, new_name)  
-   
+    
     
     sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
     
@@ -593,11 +594,11 @@ server <- function(input, output) {
     final_table[is.na(final_table)] <- 'NA'
     
     DT::datatable(final_table, colnames = c('', ''))
-
+    
   })
   
-# plot_mm_mkt - findex 2014
-
+  # plot_mm_mkt - findex 2014
+  
   output$plot_mm_mkt <- renderPlot({
     sub_dat <- all_country()
     
@@ -610,7 +611,7 @@ server <- function(input, output) {
     dat_name = c("Account at a financial institution % age 15 ts", "Debit card % age 15 ts", "Credit card % age 15 ts")
     
     new_table = data.frame(dat_name, new_name)  
-
+    
     var_string <- "Account at a financial institution % age 15 ts|Debit card % age 15 ts|Credit card % age 15 ts"
     
     sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
@@ -630,7 +631,7 @@ server <- function(input, output) {
     final_table$value <- round(final_table$value, 2)
     
     cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(final_table))
-
+    
     # plot 
     ggplot(data = final_table,
            aes(x = new_name,
@@ -643,11 +644,11 @@ server <- function(input, output) {
            y = '') +
       scale_fill_manual(name = '',
                         values = cols) 
-
+    
   })
   
   
-# plot_mm_trans
+  # plot_mm_trans
   
   output$plot_mm_mkt <- renderPlot({
     
@@ -702,7 +703,7 @@ server <- function(input, output) {
   })
   
   
-# plot_mm_ssa
+  # plot_mm_ssa
   
   
 }
