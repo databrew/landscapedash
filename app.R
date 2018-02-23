@@ -132,27 +132,26 @@ body <- dashboardBody(
                               ),
                               fluidRow(
                                 shinydashboard::box(
-                                  title = 'DFS Market and Financial Access Points',
-                                  footer = '',
-                                  status = 'warning',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 12,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  DT::dataTableOutput('tab_mm_mkt')
-                                )),
-                              fluidRow(
-                                shinydashboard::box(
                                   title = 'Drivers of Growth',
                                   footer = '',
                                   status = 'success',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 12,
+                                  width = 6,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   DT::dataTableOutput('tab_mm_pen')
+                                ),
+                                shinydashboard::box(
+                                  title = 'DFS Market and Financial Access Points',
+                                  footer = '',
+                                  status = 'warning',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  DT::dataTableOutput('tab_mm_mkt')
                                 )
                               )
                               ),
@@ -944,7 +943,10 @@ server <- function(input, output) {
     } else {
       
       # get the mean value for comparison
-      region_dat <- region_dat %>% group_by(sub_region,key) %>% summarise(mean_value = mean(value, na.rm = T))
+      region_dat <- region_dat %>% group_by(sub_region,key) %>% summarise(mean_value = mean(value, na.rm = T)) %>%
+        ungroup %>%
+        mutate(key = gsub('Average', 'Avg.', key)) %>%
+        mutate(key = gsub('transaction', 'trans.', key))
       
       # get colors based on sub_regions for legend
       cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(length(unique(region_dat$sub_region)))
