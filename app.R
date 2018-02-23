@@ -319,8 +319,8 @@ server <- function(input, output) {
       filter(key == selected_key) %>%
       # Keep only one observation per country/key/year combination
       distinct(country, key, year, .keep_all = TRUE)
-    message('df filtered is ')
-    print(head(out))
+    message('df filtered is: ')
+    print(head(out, 1))
     return(out)
   })
   
@@ -379,11 +379,13 @@ server <- function(input, output) {
   
   output$country_dashboard_country_ui <- renderUI({
     selected_country <- country()
+    message('Selected country is ', selected_country)
     selectInput('country_dashboard_country',
                 'Country',
                 choices = countries,
                 selected = selected_country,
                 multiple = FALSE)
+    
   })
   output$country_analysis_country_ui <- renderUI({
     selected_country <- country()
@@ -482,7 +484,9 @@ server <- function(input, output) {
   # reactive object that filters by country
   all_country <- reactive({
     a_country <- country()
-    sub_country <- df %>% dplyr::filter(grepl(a_country, df$country))
+    # sub_country <- df %>% dplyr::filter(grepl(a_country, df$country))
+    sub_country <- df %>% dplyr::filter(country == a_country)
+    
   })
   
   # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
@@ -646,51 +650,54 @@ server <- function(input, output) {
 # plot_mm_trans
   
   output$plot_mm_mkt <- renderPlot({
-    sub_dat <- all_country()
     
-
+    barplot(1:10)
     
-    # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
-    #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
-    #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques") 
-    
-    # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
-    # dat_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
-    #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
-    #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
-    
-    var_string <- "Mobile money transactions: number|Mobile money transactions: value|Value in USD Credit card internet|Volume Credit card internet|Value in USD Debit card internet|Volume Debit card internet|Volume E money card internet|Value in USD E money card internet|Value in USD Credit card pos|Volume Credit card pos|Value in USD Debit card pos|Volume Debit card pos|Value in USD E money card pos|Volume E money card pos"
-    
-    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
-    
-    # subset by var_strin 
-    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    
-    # remove unneed colmns 
-    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
-    
-    # # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
-    # sub_dat <- sub_dat[complete.cases(sub_dat),]
-    # sub_dat <- sub_dat[!duplicated(sub_dat$key),]
-    
-    # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
-    
-    # plot 
-    ggplot(data = sub_dat,
-           aes(x = key,
-               y = value)) +
-      geom_bar(stat = 'identity',
-               aes(fill = factor(year))) +
-      theme_landscape() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      labs(x = '',
-           y = '')
-    +
-      scale_fill_manual(name = '',
-                        values = cols) 
+    # sub_dat <- all_country()
+    # 
+    # 
+    # 
+    # # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    # # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
+    # #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
+    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
+    # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques") 
+    # 
+    # # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
+    # # dat_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
+    # #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
+    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
+    # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
+    # 
+    # var_string <- "Mobile money transactions: number|Mobile money transactions: value|Value in USD Credit card internet|Volume Credit card internet|Value in USD Debit card internet|Volume Debit card internet|Volume E money card internet|Value in USD E money card internet|Value in USD Credit card pos|Volume Credit card pos|Value in USD Debit card pos|Volume Debit card pos|Value in USD E money card pos|Volume E money card pos"
+    # 
+    # sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    # 
+    # # subset by var_strin 
+    # sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+    # 
+    # # remove unneed colmns 
+    # sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
+    # 
+    # # # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
+    # # sub_dat <- sub_dat[complete.cases(sub_dat),]
+    # # sub_dat <- sub_dat[!duplicated(sub_dat$key),]
+    # 
+    # # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
+    # 
+    # # plot 
+    # ggplot(data = sub_dat,
+    #        aes(x = key,
+    #            y = value)) +
+    #   geom_bar(stat = 'identity',
+    #            aes(fill = factor(year))) +
+    #   theme_landscape() +
+    #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    #   labs(x = '',
+    #        y = '')
+    # +
+    #   scale_fill_manual(name = '',
+    #                     values = cols) 
     
   })
   
