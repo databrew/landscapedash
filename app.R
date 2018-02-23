@@ -78,20 +78,27 @@ body <- dashboardBody(
                  fluidRow(uiOutput('country_dashboard_country_ui')),
                  fluidRow(
                    tabsetPanel(
-                     tabPanel('Market overview'),
-                     # tabPanel('Market overview',
-                     #          fluidRow(column(6,
-                     #                          DT::dataTableOutput('tab_mm_mkt')),
-                     #                   column(6,
-                     #                          DT::dataTableOutput('tab_mm_pen')
-                     #                   )),
-                     #          fluidRow(column(4,
-                     #                          plotOutput('plot_mm_mkt')),
-                     #                   column(4,
-                     #                          plotOutput('plot_mm_trans')),
-                     #                   column(4, 
-                     #                          plotOutput('plot_mm_ssa'))
-                     #                   )),
+                     # tabPanel('Market overview'),
+                     tabPanel('Market overview',
+                              fluidRow(
+                                column(6,
+                                       DT::dataTableOutput('tab_mm_mkt')
+                                ),
+                                column(6,
+                                       DT::dataTableOutput('tab_mm_pen')
+                                )
+                              ),
+                              fluidRow(
+                                column(4,
+                                       plotOutput('plot_mm_mkt')
+                                ),
+                                column(4,
+                                       plotOutput('plot_mm_trans')
+                                ),
+                                column(4,
+                                       plotOutput('plot_mm_ssa')
+                                )
+                              )),
                      tabPanel('Qualitative overview'),
                      tabPanel('Additional analyses')
                    ))
@@ -494,7 +501,7 @@ server <- function(input, output) {
   # and (2) the last two, the drivers of dfs growth
   
   # table 1
-  output$tab_mm_mkt <- renderDataTable({
+  output$tab_mm_mkt <- DT::renderDataTable({
     
     sub_dat <- all_country()
     # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
@@ -550,7 +557,7 @@ server <- function(input, output) {
   # number of people who bought over population of country?
   
   # table 2
-  output$tab_mm_mkt <- renderDataTable({
+  output$tab_mm_pen <- DT::renderDataTable({
     sub_dat <- all_country()
     # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
     new_name = c("Total Population","Unique Mobile Phone Penetration", "Smartphone Penetration", "% of Adults with FI Account",'Tech Hubs', 
@@ -600,57 +607,59 @@ server <- function(input, output) {
   # plot_mm_mkt - findex 2014
   
   output$plot_mm_mkt <- renderPlot({
-    sub_dat <- all_country()
+    barplot(1:10)
     
-    # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards 
-    # the chart is kinda dumb if MM is the same as mobile money.
-    
-    # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    new_name = c("% w/Account FI", "% w/Debit Card","% w/Credit Card") 
-    
-    dat_name = c("Account at a financial institution % age 15 ts", "Debit card % age 15 ts", "Credit card % age 15 ts")
-    
-    new_table = data.frame(dat_name, new_name)  
-    
-    var_string <- "Account at a financial institution % age 15 ts|Debit card % age 15 ts|Credit card % age 15 ts"
-    
-    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
-    
-    # subset by var_strin 
-    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    
-    
-    
-    # remove unneed colmns 
-    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
-    
-    # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
-    final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
-    
-    # round 
-    final_table$value <- round(final_table$value, 2)
-    
-    cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(final_table))
-    
-    # plot 
-    ggplot(data = final_table,
-           aes(x = new_name,
-               y = value)) +
-      geom_bar(stat = 'identity',
-               aes(fill = factor(year))) +
-      theme_landscape() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      labs(x = '',
-           y = '') +
-      scale_fill_manual(name = '',
-                        values = cols) 
+    # sub_dat <- all_country()
+    # 
+    # # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards 
+    # # the chart is kinda dumb if MM is the same as mobile money.
+    # 
+    # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    # new_name = c("% w/Account FI", "% w/Debit Card","% w/Credit Card") 
+    # 
+    # dat_name = c("Account at a financial institution % age 15 ts", "Debit card % age 15 ts", "Credit card % age 15 ts")
+    # 
+    # new_table = data.frame(dat_name, new_name)  
+    # 
+    # var_string <- "Account at a financial institution % age 15 ts|Debit card % age 15 ts|Credit card % age 15 ts"
+    # 
+    # sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    # 
+    # # subset by var_strin 
+    # sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+    # 
+    # 
+    # 
+    # # remove unneed colmns 
+    # sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
+    # 
+    # # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
+    # final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
+    # 
+    # # round 
+    # final_table$value <- round(final_table$value, 2)
+    # 
+    # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(final_table))
+    # 
+    # # plot 
+    # ggplot(data = final_table,
+    #        aes(x = new_name,
+    #            y = value)) +
+    #   geom_bar(stat = 'identity',
+    #            aes(fill = factor(year))) +
+    #   theme_landscape() +
+    #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    #   labs(x = '',
+    #        y = '') +
+    #   scale_fill_manual(name = '',
+    #                     values = cols) 
     
   })
   
   
   # plot_mm_trans
   
-  output$plot_mm_mkt <- renderPlot({
+  output$plot_mm_trans <- renderPlot({
     
     barplot(1:10)
     
@@ -661,23 +670,23 @@ server <- function(input, output) {
     # # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
     # # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
     # #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
-    # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques") 
+    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
+    # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
     # 
     # # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
     # # dat_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
     # #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
+    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
     # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
     # 
     # var_string <- "Mobile money transactions: number|Mobile money transactions: value|Value in USD Credit card internet|Volume Credit card internet|Value in USD Debit card internet|Volume Debit card internet|Volume E money card internet|Value in USD E money card internet|Value in USD Credit card pos|Volume Credit card pos|Value in USD Debit card pos|Volume Debit card pos|Value in USD E money card pos|Volume E money card pos"
     # 
     # sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
     # 
-    # # subset by var_strin 
+    # # subset by var_strin
     # sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
     # 
-    # # remove unneed colmns 
+    # # remove unneed colmns
     # sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
     # 
     # # # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
@@ -686,7 +695,7 @@ server <- function(input, output) {
     # 
     # # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
     # 
-    # # plot 
+    # # plot
     # ggplot(data = sub_dat,
     #        aes(x = key,
     #            y = value)) +
@@ -695,15 +704,17 @@ server <- function(input, output) {
     #   theme_landscape() +
     #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     #   labs(x = '',
-    #        y = '')
-    # +
+    #        y = '') +
     #   scale_fill_manual(name = '',
-    #                     values = cols) 
+    #                     values = cols)
     
   })
   
   
   # plot_mm_ssa
+  output$plot_mm_ssa <- renderPlot({
+    barplot(1:10)
+  })
   
   
 }
