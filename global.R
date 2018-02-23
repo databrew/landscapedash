@@ -466,6 +466,7 @@ if('prepared_data.RData' %in% dir()){
                   unique_subscribers,
                   wb_dev)
   
+  # REMOVE THESE LATER
   df$key <- gsub("(", "", df$key, fixed = T)
   df$key <- gsub(")", "", df$key, fixed = T)
   df$key <- gsub("[", "", df$key, fixed = T)

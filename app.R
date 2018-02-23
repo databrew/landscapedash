@@ -83,19 +83,19 @@ body <- dashboardBody(
                               br(),
                               fluidRow(
                                 shinydashboard::box(
-                                  title = 'Some plot title',
-                                  footer = 'Some plot footer',
+                                  title = 'Mobile Money Market',
+                                  footer = '',
                                   status = 'primary',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 3,
+                                  width = 6,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                  plotOutput('plot_mm_mkt')
                                 ),
                                 shinydashboard::box(
-                                  title = 'Some plot title',
-                                  footer = 'Some plot footer',
+                                  title = 'Mobile Money Transactions',
+                                  footer = '',
                                   status = 'danger',
                                   solidHeader = TRUE,
                                   background = NULL,
@@ -103,44 +103,58 @@ body <- dashboardBody(
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   plotOutput('plot_mm_trans')
-                                ),
+                                )),
+                              fluidRow(
                                 shinydashboard::box(
-                                  title = 'Some plot title',
-                                  footer = 'Some plot footer',
+                                  title = 'Mobile Money by Region',
+                                  footer = '',
                                   status = 'info',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 3,
+                                  width = 6,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   plotOutput('plot_mm_ssa')
-                                )
-                              ),
-                              fluidRow(
+                                ),
+                                
                                 shinydashboard::box(
-                                  title = 'Some random title',
-                                  footer = 'Some random footer',
-                                  status = 'warning',
+                                  title = 'Transactions by Region',
+                                  footer = '',
+                                  status = 'info',
                                   solidHeader = TRUE,
                                   background = NULL,
                                   width = 6,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
-                                  DT::dataTableOutput('tab_mm_mkt')
-                                ),
+                                  plotOutput('plot_mm_ssa_new')
+                                )
+                                
+                              ),
+                              fluidRow(
                                 shinydashboard::box(
-                                  title = 'Some other title',
-                                  footer = 'Some other footer',
+                                  title = 'DFS Market and Financial Access Points',
+                                  footer = '',
+                                  status = 'warning',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 12,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  DT::dataTableOutput('tab_mm_mkt')
+                                )),
+                              fluidRow(
+                                shinydashboard::box(
+                                  title = 'Drivers of Growth',
+                                  footer = '',
                                   status = 'success',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 6,
+                                  width = 12,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   DT::dataTableOutput('tab_mm_pen')
                                 )
                               )
-                              
                               ),
                      tabPanel('Qualitative overview'),
                      tabPanel('Additional analyses')
@@ -540,6 +554,13 @@ server <- function(input, output) {
     
   })
   
+  # reactive object that filters by country
+  get_regions <- reactive({
+
+    region_dat <- df %>% dplyr::select(sub_region, key, year, value)
+
+  })
+  
   # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
   # and (2) the last two, the drivers of dfs growth
   
@@ -559,8 +580,12 @@ server <- function(input, output) {
     
     new_table = data.frame(dat_name, new_name)  
     
-    # first need to subset data by throwing away years over 2017 (except for GDP forecast) - They say in pdf they want to be able to grab data where the latest is available, if 2016 is not available - that's what I do below by first remove all the forecast columns (2018 - 2022) and then removing NAs and duplcates, because year is already sorted.
-    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 3)
+    
+    # Keep only most recent year
+    most_recent <- max(sub_dat$year, na.rm = TRUE)
+    sub_dat <- sub_dat %>% filter(year == most_recent)
     
     # subset data frame by all the variable we need 
     var_string <- "Mobile money accounts: active|Mobile money transactions: number|Mobile money transactions: value|Volume Credit card|Volume Debit card|Value in USD Credit card|Value in USD Credit card|Value in USD Credit card internet|Value in USD Debit card internet|Mobile money agent outlets: registered|Number of bank branches in Number| Number of ATMs in NA|Volume Debit card pos|Volume E money card pos|Volume Credit card pos"
@@ -574,23 +599,19 @@ server <- function(input, output) {
     
     # remove unneed colmns 
     sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
-    
-    # IN PDF THEY WANT THE SUM OF THE CREDIT AND DEBIT CARDS FOR A BUNCH OF STUFF - FOR NOW IM ADDING IN ALL THE VARIABLES AND IF I HAVE TIME ILL SUM THEM
-    # # create total card payment variable
-    # if(is.null(sub_spread$`Volume Credit card`) | is.null(sub_spread$`Volume Debit card`)){
-    #   sub_spread$`Total Card Payment` <- NA
-    # } else {
-    #   sub_spread$`Total Card Payment` <- sub_spread$`Volume Credit card` + sub_spread$`Volume Debit card`
-    # }
-    # 
-    # transpose 
-    
+  
     # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
     final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
     
     # rempove dat_name column and fill NA with "NA"
     final_table$dat_name <- NULL
-    final_table[is.na(final_table)] <- 'NA'
+    
+    # remove NAs
+    final_table <- final_table[!is.na(final_table$value),]
+    # final_table[is.na(final_table)] <- 'NA'
+    
+    # round 
+    final_table$value <- round(final_table$value, 2)
     
     DT::datatable(final_table, 
                   colnames = c('', ''),
@@ -604,6 +625,8 @@ server <- function(input, output) {
   # table 2
   output$tab_mm_pen <- DT::renderDataTable({
     sub_dat <- all_country()
+    
+    # USE ACTUAL VARIABLE NAMES INSTEAD OF GSUBED WITHOUT REGEX
     # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
     new_name = c("Total Population","Unique Mobile Phone Penetration", "Smartphone Penetration", "% of Adults with FI Account",'Tech Hubs', 
                  "GDP per capita", "Real GDP Growth Annual Percent Change", "Bank Assets/GDP", "# of Unbanked Adults", "Poverty gap at 1.90 per day",
@@ -616,8 +639,11 @@ server <- function(input, output) {
     
     new_table = data.frame(dat_name, new_name)  
     
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 3)
     
-    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    # Keep only most recent year
+    most_recent <- max(sub_dat$year, na.rm = TRUE)
+    sub_dat <- sub_dat %>% filter(year == most_recent)
     
     # remove Q1-Q3 in variables for smart phone subscribers
     sub_dat <- sub_dat %>% filter(!grepl('Q1|Q2|Q3', sub_dat$key)) 
@@ -627,10 +653,6 @@ server <- function(input, output) {
     
     # subset by var_string 
     sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    
-    # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
-    sub_dat <- sub_dat[complete.cases(sub_dat),]
-    sub_dat <- sub_dat[!duplicated(sub_dat$key),]
     
     # remove unneed colmns 
     sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
@@ -643,8 +665,13 @@ server <- function(input, output) {
     
     # rempove dat_name column and fill NA with "NA"
     final_table$dat_name <- NULL
-    final_table[is.na(final_table)] <- 'NA'
+    # remove NAs
+    final_table <- final_table[!is.na(final_table$value),]
+    # final_table[is.na(final_table)] <- 'NA'
     
+    # round 
+    final_table$value <- round(final_table$value, 2)
+
     DT::datatable(final_table, 
                   colnames = c('', ''),
                   rownames = FALSE)
@@ -656,11 +683,13 @@ server <- function(input, output) {
         # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards
     # the chart is kinda dumb if MM is the same as mobile money.
     
-    vars <- c("Account at a financial institution (% age 15+) [ts]",
-              "Debit card (% age 15+) [ts]",
-              "Credit card (% age 15+) [ts]")
-
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')))
+    # REGEX MESSES THIS UP - WILL NEED TO CHANGE
+    vars <- c("Mobile account, income, poorest 40% % ages 15 w2" ,"Account at a financial institution % age 15 ts",
+              "Mobile account, income, richest 60% % ages 15 w2","Mobile account, male % age 15 w2",
+              "Mobile account, female % age 15 w2", "Debit card % age 15 ts",
+              "Credit card % age 15 ts")
+              
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) -3)
 
     # keep only relevant indicators
     sub_dat <- sub_dat %>%
@@ -671,35 +700,48 @@ server <- function(input, output) {
     most_recent <- max(sub_dat$year, na.rm = TRUE)
     sub_dat <- sub_dat %>% filter(year == most_recent)
     
-    # remove unneed colmns
-    sub_dat <- sub_dat %>%
-      dplyr::select(key, value)
-
-    # round
-    sub_dat$value <- round(sub_dat$value, 2)
-
-    # Define colors
-    cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
-
-    # Replace spaces in key with line breaks
-    sub_dat$key <- gsub(' ', '\n', sub_dat$key)
+    # Only plot if data available
     
-    # plot
-    ggplot(data = sub_dat,
-           aes(x = key,
-               y = value)) +
-      geom_bar(stat = 'identity',
-               aes(fill = key),
-               alpha = 0.7) +
-      theme_landscape() +
-      labs(x = '',
-           y = '',
-           title = 'Some title goes here',
-           subtitle = paste0('Data as of ', most_recent)) +
-      scale_fill_manual(name = '',
-                        values = cols) +
-      theme(legend.position = 'none') +
-      geom_label(aes(label = value))
+    if(nrow(sub_dat) == 0){
+      this_country <- country()
+      ggplot() +
+        theme_landscape() +
+        labs(title = paste0('No data available for ', this_country))
+      
+    } else {
+      # remove unneed colmns
+      sub_dat <- sub_dat %>%
+        dplyr::select(key, value)
+      
+      # round
+      sub_dat$value <- round(sub_dat$value, 2)
+      
+      # Define colors
+      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
+      
+      # Replace spaces in key with line breaks
+      sub_dat$key <- gsub(' ', '\n', sub_dat$key)
+      
+      # plot
+      ggplot(data = sub_dat,
+             aes(x = key,
+                 y = value)) +
+        geom_bar(stat = 'identity',
+                 aes(fill = key),
+                 alpha = 0.7) +
+        theme_landscape() +
+        labs(x = '',
+             y = '',
+             title = '',
+             subtitle = paste0('Data as of ', most_recent)) +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        theme(axis.text.x = element_text(
+                                         size = 12)) +
+        theme(legend.position = 'none') +
+        geom_label(aes(label = value))
+    }
+    
   })
   
   
@@ -707,26 +749,25 @@ server <- function(input, output) {
   
   output$plot_mm_trans <- renderPlot({
     
+    options(scipen=999)
+    
+    # get data
     sub_dat <- all_country()
-    # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
-    #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
-    #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
-
+    
     # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
-    vars <- c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
-                 "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-                 "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
-                 "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
+    vars <- c( "Value in USD Mobile money", "Value in USD Atm", "Value in USD Cheques", "Value in USD Credit card",  "Value in USD Debit card",
+               "Value in USD E money card", "Value in USD Credit card internet", "Value in USD Debit card internet","Value in USD E money card internet",
+               "Value in USD Credit card pos", "Value in USD Debit card pos",  "Value in USD E money card pos")
+                                                                               
+            
 
-    sub_dat <- sub_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y')))
+    # filter by year
+    sub_dat <- sub_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 3)
 
     # keep only relevant indicators
     sub_dat <- sub_dat %>%
       filter(key %in% vars) %>%
       filter(!is.na(value))
-    
 
     # Keep only most recent year
     most_recent <- suppressWarnings(max(sub_dat$year, na.rm = TRUE))
@@ -751,6 +792,9 @@ server <- function(input, output) {
       # Replace spaces in key with line breaks
       sub_dat$key <- gsub(' ', '\n', sub_dat$key)
       
+      # round value 
+      sub_dat$value <- round(sub_dat$value)
+      
       # plot
       ggplot(data = sub_dat,
              aes(x = key,
@@ -761,12 +805,13 @@ server <- function(input, output) {
         theme(legend.position = 'none') +
         labs(x = '',
              y = '',
-             title = 'Some title goes here',
+             title = '',
              subtitle = paste0('Data as of ', most_recent)) +
         scale_fill_manual(name = '',
                           values = cols) +
-        theme(axis.text.x = element_text(angle = 90,
-                                         size = 8))
+        theme(axis.text.x = element_text(
+                                         size = 12)) +
+        geom_label(aes(label = value))
     }
     
     
@@ -774,10 +819,163 @@ server <- function(input, output) {
     
   })
   
-  
   # plot_mm_ssa
   output$plot_mm_ssa <- renderPlot({
-    barplot(1:10)
+    
+    # get region and data vars, and country name
+    sub_dat <- all_country()
+    region_dat <- get_regions()
+    this_country <- country()
+    
+    # put country data into sub_region data for comparison and remove unneeded columns to match region_dat
+    sub_dat$sub_region <- sub_dat$country
+    sub_dat$country <- NULL
+    sub_dat$iso2 <-NULL
+    
+    # combine region and country data for comparison
+    region_dat <- bind_rows(region_dat,
+                            sub_dat)
+    
+    # get variables
+    vars <- c("Mobile account % age 15 w2" , "Mobile money balance value % of GDP", "Mobile money transactions: value % of GDP" )
+    
+    # keep only relevant indicators
+    region_dat <- region_dat %>%
+      filter(key %in% vars) %>%
+      filter(!is.na(value))
+    
+    # subset for year
+    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 3)
+    
+    
+    # Keep only most recent year
+    most_recent <- suppressWarnings(max(region_dat$year, na.rm = TRUE))
+    region_dat <- region_dat %>% filter(year == most_recent)
+    
+    
+
+    # Only plot if data available and country still exists after subsetting for variables
+    if(nrow(region_dat) == 0 | all(!grepl(this_country, region_dat$sub_region))){
+      this_country <- country()
+      ggplot() +
+        theme_landscape() +
+        labs(title = paste0('No data available for ', this_country))
+      
+    } else {
+      
+      # get the mean value for each region and country
+      region_dat <- region_dat %>% group_by(sub_region,key) %>% summarise(mean_value = mean(value, na.rm = T))
+      
+      # get colors based on sub region
+      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(length(unique(region_dat$sub_region)))
+      
+      # Replace spaces in key with line breaks
+      region_dat$key <- gsub(' ', '\n', region_dat$key)
+      
+      # make country the ref level, so it shows up on top for legend
+      region_dat$sub_region <- relevel(factor(region_dat$sub_region),ref = this_country)
+      
+      # round value 
+      region_dat$mean_value <- round(region_dat$mean_value)
+      
+      # plot
+      ggplot(data = region_dat,
+             aes(x = key,
+                 y = mean_value)) +
+        geom_bar(stat = 'identity', position = 'dodge',
+                 aes(fill = sub_region)) +
+        theme_landscape() +
+        labs(x = '',
+             y = '',
+             title = '',
+             subtitle = paste0('Data as of ', most_recent)) +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        theme(axis.text.x = element_text(
+                                         size = 12)) 
+    }
+    
+    
+  })
+  
+  
+  
+  # plot_mm_ssa
+  output$plot_mm_ssa_new <- renderPlot({
+    
+    # ANY REGION ANALYSIS SHOULD TECHNICALLY HAVE THE COUNTRY CHOSEN REMOVED FROM THE REGION DATA.
+    # get region and data vars, and country name
+    sub_dat <- all_country()
+    region_dat <- get_regions()
+    this_country <- country()
+    
+    # put country data into sub_region data for comparison and remove unneeded columns to match region_dat
+    sub_dat$sub_region <- sub_dat$country
+    sub_dat$country <- NULL
+    sub_dat$iso2 <-NULL
+    
+    # combine region and country data for comparison
+    region_dat <- bind_rows(region_dat,
+                            sub_dat)
+    # get vars
+    vars <- c("Average transaction size in USD Atm" , "Average transaction size in USD Credit card", "Average transaction size in USD Debit card", 
+              "Average transaction size in USD E money", "Average transaction size in USD Online money", "Average transaction size in USD Mobile money")
+    
+    # keep only relevant indicators
+    region_dat <- region_dat %>%
+      filter(key %in% vars) %>%
+      filter(!is.na(value))
+    
+    # subset by year
+    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 3)
+    
+    
+    # Keep only most recent year
+    most_recent <- suppressWarnings(max(region_dat$year, na.rm = TRUE))
+    region_dat <- region_dat %>% filter(year == most_recent)
+  
+    # Only plot if data available and if country still exists after subsetting by variables
+    if(nrow(region_dat) == 0 | all(!grepl(this_country, region_dat$sub_region))){
+      this_country <- country()
+      ggplot() +
+        theme_landscape() +
+        labs(title = paste0('No data available for ', this_country))
+      
+    } else {
+      
+      # get the mean value for comparison
+      region_dat <- region_dat %>% group_by(sub_region,key) %>% summarise(mean_value = mean(value, na.rm = T))
+      
+      # get colors based on sub_regions for legend
+      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(length(unique(region_dat$sub_region)))
+      
+      # Replace spaces in key with line breaks
+      region_dat$key <- gsub(' ', '\n', region_dat$key)
+      
+      # relevel so country shouws up on top of legend
+      region_dat$sub_region <- relevel(factor(region_dat$sub_region), ref = this_country)
+      
+      # round value 
+      region_dat$mean_value <- round(region_dat$mean_value)
+      
+      # plot
+      ggplot(data = region_dat,
+             aes(x = key,
+                 y = mean_value)) +
+        geom_bar(stat = 'identity', position = 'dodge',
+                 aes(fill = sub_region)) +
+        theme_landscape() +
+        labs(x = '',
+             y = '',
+             title = '',
+             subtitle = paste0('Data as of ', most_recent)) +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        theme(axis.text.x = element_text(
+                                         size = 12)) 
+    }
+    
+    
   })
   
   
