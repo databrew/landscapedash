@@ -1,5 +1,6 @@
 library(shiny)
 library(shinydashboard)
+library(leaflet.extras)
 source('functions.R')
 source('global.R')
 
@@ -55,10 +56,10 @@ body <- dashboardBody(
                           uiOutput('dfs_market_overview_indicator_ui')),
                    column(3,
                           sliderInput('dfs_market_overview_year',
-                                      'Year',
+                                      'Select a year',
                                       min = min(df$year, na.rm = TRUE),
                                       max = max(df$year, na.rm = TRUE),
-                                      value = 2017,
+                                      value = 2016,
                                       step = 1,
                                       sep = '')),
                    column(3,
@@ -427,7 +428,7 @@ server <- function(input, output) {
       if(make_plot){
         plotOutput('dfs_market_overview_plot')
       } else {
-        leafletOutput('dfs_market_overview_leaf')
+        leafletOutput('dfs_market_overview_leaf', height = 500)
       }
     })
   
@@ -466,7 +467,9 @@ server <- function(input, output) {
       map <- afr()
       coords <- coordinates(map)
       l <- leaflet() %>%
-        addProviderTiles('Stamen.TonerLite')
+        addProviderTiles('Stamen.TonerLite') %>%
+        addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE)
+      
       if(nrow(coords) > 0){
         l <- l %>%
           fitBounds(min(coords[,1], na.rm = TRUE),
@@ -520,7 +523,19 @@ server <- function(input, output) {
                    average_value = round(average_value, digits = 2))
           names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
           popups <- lapply(rownames(pops), function(row){
-            knitr::kable(pops[row.names(pops) == row,], format = 'html')
+            x <- pops[row.names(pops) == row,]
+            captions <- x$Key
+            x$Key <- NULL
+            x <- gather(x,a,b,Country:Link) %>%
+              mutate(a = paste0(a, '   ')) %>%
+              mutate(b = paste0('    ', b))
+            names(x) <- c(' ', '  ')
+            knitr::kable(x, 
+                         rnames = FALSE,
+                         caption = captions,
+                         align = 'lr',
+                         # align = paste(rep("l", ncol(x)), collapse = ''),
+                         format = 'html')
           })
           
           
@@ -534,7 +549,11 @@ server <- function(input, output) {
                         smoothFactor = 0.2, 
                         fillOpacity = 0.7,
                         color = ~pal(value),
-                        popup = popups)
+                        popup = popups) %>%
+            addPolylines(data = map,
+                         color = 'black',
+                         weight = 1,
+                         opacity = 1)
           l <- l %>%
             addLegend(pal = pal, values = map@data$value, opacity = 0.7,
                       position = "bottomright",
