@@ -481,10 +481,8 @@ server <- function(input, output) {
   
   # reactive object that filters by country
   all_country <- reactive({
-    selected_country <- country()
-    sub_country <- df %>% dplyr::filter(grepl(selected_country, df$country))
-    
-    # create 
+    a_country <- country()
+    sub_country <- df %>% dplyr::filter(grepl(a_country, df$country))
   })
   
   # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
@@ -493,12 +491,7 @@ server <- function(input, output) {
   # table 1
   output$tab_mm_mkt <- renderDataTable({
 
-    # subset data by country
-    sub_dat <- all_country()
-    if(is.null(sub_dat)){
-      return(NULL)
-    } else {
-      
+      sub_dat <- all_country()
       # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
       new_name = c("Active MM Accounts", "MM Transaction Volume", "MM Transaction Value USD",'Credit Card Volume',
                    'Debit Card Volume', 'Total Credit Card Value (USD)', 'Total Debit Card Value (USD)', 'Total Credit Card Internet Value (USD)',
@@ -544,12 +537,8 @@ server <- function(input, output) {
       final_table$dat_name <- NULL
       final_table[is.na(final_table)] <- 'NA'
       
+      DT::datatable(final_table, colnames = c('', ''))
       
-      out <- DT::datatable(final_table, colnames = c('', ''))
-      return(out)
-    }
-    
-    
   })
   
   # Note on Market penetration is the percentage of a target market that consumes a product or service. Market penetration can also be a measure of one company's sales as a percentage of all sales for a product. In a broad sense, market penetration is a measure of individuals in a target market who consume something versus those who do not. 
@@ -558,19 +547,155 @@ server <- function(input, output) {
   # table 2
   output$tab_mm_mkt <- renderDataTable({
     sub_dat <- all_country()
-    # get data on unique mobile phone penetration, smartphone penetration, and % of adults with FI account, tech hubs,
-    # adult population, GDP (PPP USD), GDP Growth forcast, Bank assets/GDP, Number of unbanked, % of population living below 1.9 PPF, Share of uban population, Literacy Rate
+    # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    new_name = c("Total Population","Unique Mobile Phone Penetration", "Smartphone Penetration", "% of Adults with FI Account",'Tech Hubs', 
+                 "GDP per capita", "Real GDP Growth Annual Percent Change", "Bank Assets/GDP", "# of Unbanked Adults", "Poverty gap at 1.90 per day",
+                 "Adult Literacy rate") 
     
-    # 1st part: "Mobile account (% age 15+) [w2]", ("Q1 Percentage with Smart Phone" "Q2 Percentage with Smart Phone" "Q3 Percentage with Smart Phone" "Q4 Percentage with Smart Phone"), "Account at a financial institution (% age 15+) [ts]", "Tech Hubs"
+    dat_name = c("Population, total" ,"Q4 Percentage Unique Subscribers", "Q4 Percentage with Smart Phone", "Account at a financial institution % age 15 ts", 
+                 "Tech Hubs", "GDP per capita, PPP current international $", "Real GDP Growth Annual Percent Change", 
+                 "Assets \nas % of GDP in as % of GDP", "# of unbanked adults", "Poverty gap at $1.90 a day 2011 PPP %", 
+                 "Literacy rate, adult total % of people ages 15 and above")
     
-    # 2nd part: "Population ages 0-14, total" (only population variable i could find), "GDP (current US$)" (no forecast variable), "Real GDP Growth (Annual Percent Change)" (for 2020), "Assets \nas % of GDP in as % of GDP", "# of unbanked adults", "Poverty gap at $1.90 a day (2011 PPP) (%)"
+    new_table = data.frame(dat_name, new_name)  
+   
+    
+    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    
+    # remove Q1-Q3 in variables for smart phone subscribers
+    sub_dat <- sub_dat %>% filter(!grepl('Q1|Q2|Q3', sub_dat$key)) 
+    
+    # subset data frame by all the variable we need 
+    var_string <- "Population, total|Q4 Percentage Unique Subscribers|Q4 Percentage with Smart Phone|Account at a financial institution % age 15 ts|Tech Hubs|Population ages 0-14, total|GDP per capita, PPP current international $|Real GDP Growth Annual Percent Change|Assets \nas % of GDP in as % of GDP|# of unbanked adults|Poverty gap at $1.90 a day 2011 PPP %|Literacy rate, adult total % of people ages 15 and above"
+    
+    # subset by var_string 
+    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+    
+    # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
+    sub_dat <- sub_dat[complete.cases(sub_dat),]
+    sub_dat <- sub_dat[!duplicated(sub_dat$key),]
+    
+    # remove unneed colmns 
+    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
+    
+    # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
+    final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
+    
+    # round 
+    final_table$value <- round(final_table$value, 2)
+    
+    # rempove dat_name column and fill NA with "NA"
+    final_table$dat_name <- NULL
+    final_table[is.na(final_table)] <- 'NA'
+    
+    DT::datatable(final_table, colnames = c('', ''))
+
+  })
   
+# plot_mm_mkt - findex 2014
+
+  output$plot_mm_mkt <- renderPlot({
+    sub_dat <- all_country()
     
+    # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards 
+    # the chart is kinda dumb if MM is the same as mobile money.
+    
+    # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    new_name = c("% w/Account FI", "% w/Debit Card","% w/Credit Card") 
+    
+    dat_name = c("Account at a financial institution % age 15 ts", "Debit card % age 15 ts", "Credit card % age 15 ts")
+    
+    new_table = data.frame(dat_name, new_name)  
+
+    var_string <- "Account at a financial institution % age 15 ts|Debit card % age 15 ts|Credit card % age 15 ts"
+    
+    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    
+    # subset by var_strin 
+    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+    
+    
+    
+    # remove unneed colmns 
+    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
+    
+    # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
+    final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
+    
+    # round 
+    final_table$value <- round(final_table$value, 2)
+    
+    cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(final_table))
+
+    # plot 
+    ggplot(data = final_table,
+           aes(x = new_name,
+               y = value)) +
+      geom_bar(stat = 'identity',
+               aes(fill = factor(year))) +
+      theme_landscape() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(x = '',
+           y = '') +
+      scale_fill_manual(name = '',
+                        values = cols) 
+
+  })
+  
+  
+# plot_mm_trans
+  
+  output$plot_mm_mkt <- renderPlot({
+    sub_dat <- all_country()
+    
+
+    
+    # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
+    #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
+    #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
+    #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques") 
+    
+    # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
+    # dat_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
+    #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
+    #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos", 
+    #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
+    
+    var_string <- "Mobile money transactions: number|Mobile money transactions: value|Value in USD Credit card internet|Volume Credit card internet|Value in USD Debit card internet|Volume Debit card internet|Volume E money card internet|Value in USD E money card internet|Value in USD Credit card pos|Volume Credit card pos|Value in USD Debit card pos|Volume Debit card pos|Value in USD E money card pos|Volume E money card pos"
+    
+    sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
+    
+    # subset by var_strin 
+    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
+    
+    # remove unneed colmns 
+    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
+    
+    # # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
+    # sub_dat <- sub_dat[complete.cases(sub_dat),]
+    # sub_dat <- sub_dat[!duplicated(sub_dat$key),]
+    
+    # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
+    
+    # plot 
+    ggplot(data = sub_dat,
+           aes(x = key,
+               y = value)) +
+      geom_bar(stat = 'identity',
+               aes(fill = factor(year))) +
+      theme_landscape() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(x = '',
+           y = '')
+    +
+      scale_fill_manual(name = '',
+                        values = cols) 
     
   })
   
   
-  
+# plot_mm_ssa
   
   
 }

@@ -192,6 +192,29 @@ if('prepared_data.RData' %in% dir()){
   findex$country <- gsub("Tanzania", "Tanzania, United Republic of", findex$country)
   
   ##########
+  # read in findex  original and clean
+  ##########
+  findex_original <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+                                sheet = 'Findex original')
+  
+  # remove country code and indicator code
+  findex_original$`Country Code` <- findex_original$`Indicator Code` <- NULL
+  
+  # gather data to make long
+  findex_original <- gather(findex_original, key, value, `2011`:`MRV`)
+  
+  # recode column names
+  names(findex_original) <- c('country', 'key', 'year', 'value')
+  
+  # recode names
+  findex_original$country <- gsub('Congo, Dem. Rep.', 'Congo (Democratic Republic of the)', findex_original$country)
+  findex_original$country <- gsub('Congo, Rep.', 'Congo', findex_original$country)
+  findex_original$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", findex_original$country)
+  findex_original$country <- gsub("Tanzania", "Tanzania, United Republic of", findex_original$country)
+  
+  
+  
+  ##########
   # read and clean GDP Growth sheet
   ##########
   gdp <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
@@ -434,6 +457,7 @@ if('prepared_data.RData' %in% dir()){
   df <- bind_rows(afsd,
                   fas,
                   findex,
+                  findex_original,
                   gdp,
                   gpss_retail_transactions,
                   smart_phone_adoption,
@@ -442,6 +466,12 @@ if('prepared_data.RData' %in% dir()){
                   unique_subscribers,
                   wb_dev)
   
+  df$key <- gsub("(", "", df$key, fixed = T)
+  df$key <- gsub(")", "", df$key, fixed = T)
+  df$key <- gsub("[", "", df$key, fixed = T)
+  df$key <- gsub("]", "", df$key, fixed = T)
+  df$key <- gsub("+", "", df$key, fixed = T)
+
   
   ##########
   # get data from africa@data
