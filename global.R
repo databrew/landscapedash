@@ -9,13 +9,20 @@ library(Hmisc)
 library(htmlTable)
 library(leaflet)
 library(RColorBrewer)
+# library(rgeos)
+library(sf)
 
 if('prepared_data.RData' %in% dir()){
   load('prepared_data.RData')
 } else {
   
   # Load a shapefile of Africa
-  africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
+  
+  # africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
+  africa <- st_read('spatial_data/africa_shp/', 'AfricanCountries')
+  # Simplify  
+  africa_polys <- st_simplify(africa, preserveTopology = TRUE, dTolerance = 0.5)
+  africa <- as(st_zm(africa_polys), "Spatial")
   
   # Get countries by region
   countries_by_region <- read_csv('spatial_data/countries_by_region.csv')

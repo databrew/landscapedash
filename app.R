@@ -562,15 +562,16 @@ server <- function(input, output) {
             clearPopups() %>%
             clearShapes() %>%
             addPolygons(data = map,
-                        stroke = FALSE, 
+                        stroke = TRUE,
                         smoothFactor = 0.2, 
                         fillOpacity = 0.7,
                         color = ~pal(value),
                         popup = popups) %>%
-            addPolylines(data = map,
-                         color = 'black',
-                         weight = 1,
-                         opacity = 1)
+            # addPolylines(data = map,
+            #              color = 'black',
+            #              weight = 1,
+                         # opacity = 1) %>%
+            addProviderTiles('Stamen.TonerLabels')
           l <- l %>%
             addLegend(pal = pal, values = map@data$value, opacity = 0.7,
                       position = "bottomright",
