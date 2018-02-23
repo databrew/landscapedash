@@ -80,25 +80,68 @@ body <- dashboardBody(
                    tabsetPanel(
                      # tabPanel('Market overview'),
                      tabPanel('Market overview',
+                              br(),
                               fluidRow(
-                                column(6,
-                                       DT::dataTableOutput('tab_mm_mkt')
+                                shinydashboard::box(
+                                  title = 'Some plot title',
+                                  footer = 'Some plot footer',
+                                  status = 'primary',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 3,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                 plotOutput('plot_mm_mkt')
                                 ),
-                                column(6,
-                                       DT::dataTableOutput('tab_mm_pen')
+                                shinydashboard::box(
+                                  title = 'Some plot title',
+                                  footer = 'Some plot footer',
+                                  status = 'danger',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  plotOutput('plot_mm_trans')
+                                ),
+                                shinydashboard::box(
+                                  title = 'Some plot title',
+                                  footer = 'Some plot footer',
+                                  status = 'info',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 3,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  plotOutput('plot_mm_ssa')
                                 )
                               ),
                               fluidRow(
-                                column(4,
-                                       plotOutput('plot_mm_mkt')
+                                shinydashboard::box(
+                                  title = 'Some random title',
+                                  footer = 'Some random footer',
+                                  status = 'warning',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  DT::dataTableOutput('tab_mm_mkt')
                                 ),
-                                column(4,
-                                       plotOutput('plot_mm_trans')
-                                ),
-                                column(4,
-                                       plotOutput('plot_mm_ssa')
+                                shinydashboard::box(
+                                  title = 'Some other title',
+                                  footer = 'Some other footer',
+                                  status = 'success',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  DT::dataTableOutput('tab_mm_pen')
                                 )
-                              )),
+                              )
+                              
+                              ),
                      tabPanel('Qualitative overview'),
                      tabPanel('Additional analyses')
                    ))
@@ -549,7 +592,9 @@ server <- function(input, output) {
     final_table$dat_name <- NULL
     final_table[is.na(final_table)] <- 'NA'
     
-    DT::datatable(final_table, colnames = c('', ''))
+    DT::datatable(final_table, 
+                  colnames = c('', ''),
+                  rownames = FALSE)
     
   })
   
@@ -600,60 +645,61 @@ server <- function(input, output) {
     final_table$dat_name <- NULL
     final_table[is.na(final_table)] <- 'NA'
     
-    DT::datatable(final_table, colnames = c('', ''))
+    DT::datatable(final_table, 
+                  colnames = c('', ''),
+                  rownames = FALSE)
     
   })
   
-  # plot_mm_mkt - findex 2014
-  
   output$plot_mm_mkt <- renderPlot({
-    barplot(1:10)
+    sub_dat <- all_country()
+        # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards
+    # the chart is kinda dumb if MM is the same as mobile money.
     
-    # sub_dat <- all_country()
-    # 
-    # # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards 
-    # # the chart is kinda dumb if MM is the same as mobile money.
-    # 
-    # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    # new_name = c("% w/Account FI", "% w/Debit Card","% w/Credit Card") 
-    # 
-    # dat_name = c("Account at a financial institution % age 15 ts", "Debit card % age 15 ts", "Credit card % age 15 ts")
-    # 
-    # new_table = data.frame(dat_name, new_name)  
-    # 
-    # var_string <- "Account at a financial institution % age 15 ts|Debit card % age 15 ts|Credit card % age 15 ts"
-    # 
-    # sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
-    # 
-    # # subset by var_strin 
-    # sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    # 
-    # 
-    # 
-    # # remove unneed colmns 
-    # sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
-    # 
-    # # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
-    # final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
-    # 
-    # # round 
-    # final_table$value <- round(final_table$value, 2)
-    # 
-    # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(final_table))
-    # 
-    # # plot 
-    # ggplot(data = final_table,
-    #        aes(x = new_name,
-    #            y = value)) +
-    #   geom_bar(stat = 'identity',
-    #            aes(fill = factor(year))) +
-    #   theme_landscape() +
-    #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    #   labs(x = '',
-    #        y = '') +
-    #   scale_fill_manual(name = '',
-    #                     values = cols) 
+    vars <- c("Account at a financial institution (% age 15+) [ts]",
+              "Debit card (% age 15+) [ts]",
+              "Credit card (% age 15+) [ts]")
+
+    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')))
+
+    # keep only relevant indicators
+    sub_dat <- sub_dat %>%
+      filter(key %in% vars) %>%
+      filter(!is.na(value))
     
+    # Keep only most recent year
+    most_recent <- max(sub_dat$year, na.rm = TRUE)
+    sub_dat <- sub_dat %>% filter(year == most_recent)
+    
+    # remove unneed colmns
+    sub_dat <- sub_dat %>%
+      dplyr::select(key, value)
+
+    # round
+    sub_dat$value <- round(sub_dat$value, 2)
+
+    # Define colors
+    cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
+
+    # Replace spaces in key with line breaks
+    sub_dat$key <- gsub(' ', '\n', sub_dat$key)
+    
+    # plot
+    ggplot(data = sub_dat,
+           aes(x = key,
+               y = value)) +
+      geom_bar(stat = 'identity',
+               aes(fill = key),
+               alpha = 0.7) +
+      theme_landscape() +
+      labs(x = '',
+           y = '',
+           title = 'Some title goes here',
+           subtitle = paste0('Data as of ', most_recent)) +
+      scale_fill_manual(name = '',
+                        values = cols) +
+      theme(legend.position = 'none') +
+      geom_label(aes(label = value))
   })
   
   
@@ -661,52 +707,70 @@ server <- function(input, output) {
   
   output$plot_mm_trans <- renderPlot({
     
-    barplot(1:10)
+    sub_dat <- all_country()
+    # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
+    # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
+    #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
+    #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
+    #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
+
+    # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
+    vars <- c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
+                 "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
+                 "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
+                 "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
+
+    sub_dat <- sub_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y')))
+
+    # keep only relevant indicators
+    sub_dat <- sub_dat %>%
+      filter(key %in% vars) %>%
+      filter(!is.na(value))
     
-    # sub_dat <- all_country()
-    # 
-    # 
-    # 
-    # # # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    # # new_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
-    # #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
-    # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
-    # 
-    # # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
-    # # dat_name = c("Mobile money transactions: number", "Mobile money transactions: value", "Value in USD Credit card internet", "Volume Credit card internet",
-    # #              "Value in USD Debit card internet", "Volume Debit card internet",  "Volume E money card internet","Value in USD E money card internet",
-    # #              "Value in USD Credit card pos",  "Volume Credit card pos","Value in USD Debit card pos",  "Volume Debit card pos",
-    # #              "Value in USD E money card pos", "Volume E money card pos","Value in USD Cheques", "Volume Cheques")
-    # 
-    # var_string <- "Mobile money transactions: number|Mobile money transactions: value|Value in USD Credit card internet|Volume Credit card internet|Value in USD Debit card internet|Volume Debit card internet|Volume E money card internet|Value in USD E money card internet|Value in USD Credit card pos|Volume Credit card pos|Value in USD Debit card pos|Volume Debit card pos|Value in USD E money card pos|Volume E money card pos"
-    # 
-    # sub_dat <- sub_dat %>% dplyr::filter(year < 2018)
-    # 
-    # # subset by var_strin
-    # sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    # 
-    # # remove unneed colmns
-    # sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- NULL
-    # 
-    # # # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
-    # # sub_dat <- sub_dat[complete.cases(sub_dat),]
-    # # sub_dat <- sub_dat[!duplicated(sub_dat$key),]
-    # 
-    # # cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
-    # 
-    # # plot
-    # ggplot(data = sub_dat,
-    #        aes(x = key,
-    #            y = value)) +
-    #   geom_bar(stat = 'identity',
-    #            aes(fill = factor(year))) +
-    #   theme_landscape() +
-    #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    #   labs(x = '',
-    #        y = '') +
-    #   scale_fill_manual(name = '',
-    #                     values = cols)
+
+    # Keep only most recent year
+    most_recent <- suppressWarnings(max(sub_dat$year, na.rm = TRUE))
+    sub_dat <- sub_dat %>% filter(year == most_recent)
+    
+    # Only plot if data available
+    
+    if(nrow(sub_dat) == 0){
+      this_country <- country()
+      ggplot() +
+        theme_landscape() +
+        labs(title = paste0('No data available for ', this_country))
+      
+    } else {
+      # Data exists, so let's make a plot
+      # remove unneed colmns
+      sub_dat <- sub_dat %>%
+        dplyr::select(key, value)
+      
+      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
+      
+      # Replace spaces in key with line breaks
+      sub_dat$key <- gsub(' ', '\n', sub_dat$key)
+      
+      # plot
+      ggplot(data = sub_dat,
+             aes(x = key,
+                 y = value)) +
+        geom_bar(stat = 'identity',
+                 aes(fill = key)) +
+        theme_landscape() +
+        theme(legend.position = 'none') +
+        labs(x = '',
+             y = '',
+             title = 'Some title goes here',
+             subtitle = paste0('Data as of ', most_recent)) +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        theme(axis.text.x = element_text(angle = 90,
+                                         size = 8))
+    }
+    
+    
+    
     
   })
   
