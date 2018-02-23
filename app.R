@@ -494,7 +494,8 @@ server <- function(input, output) {
   
   observeEvent(
     c(input$dfs_market_overview_indicator,
-      input$dfs_market_overview_year), {
+      input$dfs_market_overview_year,
+      input$dfs$market_overview_region), {
         year <- input$dfs_market_overview_year
         print('YEAR IS ')
         print(year)
