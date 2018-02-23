@@ -510,7 +510,7 @@ if('prepared_data.RData' %in% dir()){
 # Get which indicators are not 100% NA for any given year
 okay_indicators <- df %>%
   filter(!is.na(value)) %>%
-  group_by(year, key) %>%
+  group_by(year, key, sub_region) %>%
   summarise(ok = length(value) > 0) %>%
   ungroup %>%
   arrange(year) %>%

@@ -343,8 +343,12 @@ server <- function(input, output) {
     }
     
     # Only allow those indicators which have some values for the year in question
-    available_indicators <- okay_indicators %>% filter(year == selected_year) %>%
+    sr <- input$dfs_market_overview_region
+    available_indicators <- okay_indicators %>% 
+      filter(year == selected_year) %>%
+      filter(sub_region %in% sr) %>%
       .$key %>% unlist
+    available_indicators <- sort(unique(available_indicators))
     
     # If the previously selected indicator is available, use it
     use_si <- FALSE
