@@ -21,7 +21,7 @@ if('prepared_data.RData' %in% dir()){
   # africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
   africa <- st_read('spatial_data/africa_shp/', 'AfricanCountries')
   # Simplify  
-  africa_polys <- st_simplify(africa, preserveTopology = TRUE, dTolerance = 0.5)
+  africa_polys <- st_simplify(africa, preserveTopology = TRUE, dTolerance = 0.1)
   africa <- as(st_zm(africa_polys), "Spatial")
   
   # Get countries by region
