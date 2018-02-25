@@ -413,10 +413,19 @@ server <- function(input, output) {
         arrange(value) %>%
         mutate(country = gsub('_', '\n', country)) 
       if(nrow(plot_data) > 0){
+        
         plot_data <- plot_data %>%
           mutate(country = factor(country,
                                   levels = plot_data$country)) %>%
           mutate(ranking = 1:nrow(plot_data))
+        
+        avg <- round(mean(plot_data$value, na.rm = TRUE), digits = 2)
+        
+        label_df <- data.frame(x = levels(plot_data$country)[1],
+                               y = avg,
+                               label = avg)
+        
+        
         cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(plot_data))
         ggplot(data = plot_data,
                aes(x = country,
@@ -429,7 +438,16 @@ server <- function(input, output) {
                y = '') +
           scale_fill_manual(name = '',
                             values = cols) +
-          theme(legend.position = 'none')
+          theme(legend.position = 'none') +
+          geom_hline(yintercept = avg,
+                     lty = 2,
+                     alpha = 0.8) +
+          geom_label(data = label_df,
+                     aes(x = x,
+                         y = y,
+                         label = paste0('Average:\n',
+                                        label)),
+                     nudge_x = 0.5)
       } else {
         NULL
       }
