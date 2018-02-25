@@ -287,7 +287,12 @@ body <- dashboardBody(
              ),
              tabItem(
                tabName="glossary",
-               fluidPage()
+               fluidPage(
+                 fluidRow(
+                   column(12,
+                          DT::dataTableOutput('glossary_table'))
+                 )
+               )
              ),
              tabItem(
                tabName = 'about',
@@ -1164,6 +1169,13 @@ server <- function(input, output) {
         dplyr::filter(!is.na(value))    
       DT::datatable(x, rownames = NULL)
       })
+  
+  output$glossary_table <- 
+    DT::renderDataTable({
+      prettify_scroll(glossary,
+                    scroll_x = TRUE,
+                    download_options = TRUE)
+    })
   
   
 }

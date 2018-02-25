@@ -17,7 +17,6 @@ if('prepared_data.RData' %in% dir()){
 } else {
   
   # Load a shapefile of Africa
-  
   # africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
   africa <- st_read('spatial_data/africa_shp/', 'AfricanCountries')
   # Simplify  
@@ -56,19 +55,12 @@ if('prepared_data.RData' %in% dir()){
   # Remove all those with no info (ie, north africa)
   africa <- africa[!is.na(africa@data$sub_region),]
   
-  # # Create some dummy data
-  # df <- 
-  #   expand.grid(country = sort(unique(africa@data$COUNTRY)),
-  #               key = c('Poverty rate',
-  #                       'Cell phone penetration',
-  #                       'Access to financial services'),
-  #               year = c(2000:2016,NA)) %>%
-  #   left_join(africa@data %>% 
-  #               filter(!duplicated(COUNTRY)) %>%
-  #               dplyr::select(COUNTRY, iso2, sub_region),
-  #             by = c('country' = 'COUNTRY'))
-  # df$value <- rnorm(mean = 50, n = nrow(df), sd = 15)
-  # df <- df %>% sample_n(round(0.9 * nrow(df)))
+  ##########
+  # read in glossary data
+  ##########
+  glossary <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+                         sheet = 'Glossary',
+                         skip = 1)
   
   ##########
   # read in and clean qualiative overview data
