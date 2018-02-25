@@ -424,6 +424,18 @@ server <- function(input, output) {
     ))
   })
   
+  # Observe the download confirmation, and download stuff
+  observeEvent(input$download_confirm,{
+    showModal(modalDialog(
+      title = "Under construction",
+      fluidPage(
+        p('Hi Oleksiy! Unfortunately, this functionality has not yet been implemented.')
+      ),
+      easyClose = TRUE,
+      footer = NULL
+    ))
+  })
+  
   # Get a reactive selected indicator, so as to carry through between
   # re-rendering of the drop-down menu
   selected_indicator <- reactiveVal(value = NULL)

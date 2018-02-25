@@ -441,15 +441,7 @@ if('prepared_data.RData' %in% dir()){
   # get regional data
   regional_string <- 'Sub-Saharan|North Africa'
   regional_data_wb <- wb_dev %>% filter(grepl(regional_string, wb_dev$country))
-  
-  
-  
-  # Ignoring these for now due to double headers
-  # gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-  #                   sheet = 'GPPS Accounts')
-  # gpss_access_points <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-  #                             sheet = 'GPPS Accounts')
-  
+
   ##########
   # bind all of the data together 
   ##########
