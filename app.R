@@ -282,7 +282,7 @@ body <- dashboardBody(
                                 width = 12,
                                 collapsible = TRUE,
                                 collapsed = FALSE,
-                                h3('Not yet done.',
+                                h3('Waiting on input from client.',
                                    align = 'center')
                               )),
                      tabPanel('Custom analyses',
