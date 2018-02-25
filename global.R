@@ -483,8 +483,7 @@ if('prepared_data.RData' %in% dir()){
   # (1) get iso2 and sub_region for country in df - use inner_join to drop extra countries
   # in df
   df <- inner_join(df, temp_africa, by = 'country')
-  # For those with no year, assume 2018
-  df$year[is.na(df$year)] <- 2018
+  
   # Arrange descending from most modern to least
   df <- df %>% arrange(desc(year), key, country)
 
@@ -506,7 +505,7 @@ if('prepared_data.RData' %in% dir()){
        file = 'prepared_data.RData')
 }
 
-# Get which indicators are not 100% NA for any given year
+# Get which indicators are not 100% NA for any given year by region
 okay_indicators <- df %>%
   filter(!is.na(value)) %>%
   group_by(year, key, sub_region) %>%
@@ -514,6 +513,16 @@ okay_indicators <- df %>%
   ungroup %>%
   arrange(year) %>%
   filter(ok)
+
+# Get which indicators are not 100% NA for any given year by country
+okay_indicators_country <- df %>%
+  filter(!is.na(value)) %>%
+  group_by(year, key, country) %>%
+  summarise(ok = length(value) > 0) %>%
+  ungroup %>%
+  arrange(year) %>%
+  filter(ok)
+
 
 # Create vector of indicators
 indicators <- sort(unique(df$key))
@@ -534,3 +543,13 @@ africa <- africa[!coordinates(africa)[,2] < -35,]
 
 # Make sure year is numeric
 df$year <- as.numeric(as.character(df$year))
+
+# No na values
+df <- df %>% filter(!is.na(value))
+
+# For those with no year, assume 2017
+df$year[is.na(df$year)] <- 2017
+
+# No repeats
+df <- df %>%
+  dplyr::distinct(country, key, year, value, .keep_all = TRUE)

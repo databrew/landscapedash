@@ -210,19 +210,23 @@ body <- dashboardBody(
                               fluidRow(
                                 column(3,
                                        align = 'center',
-                                       selectInput('a',
-                                                   'Indicator',
-                                                   choices = letters)),
+                                       uiOutput('country_analysis_indicator_ui')),
                                 column(3,
                                        align = 'center',
-                                       selectInput('b',
-                                                   'Year',
-                                                   choices = letters)),
+                                       sliderInput('country_analysis_country_year',
+                                                   'Filter years',
+                                                   min = min(df$year, na.rm = TRUE),
+                                                   max = max(df$year, na.rm = TRUE),
+                                                   value = c(2000, 2016),
+                                                   step = 1,
+                                                   sep = '')),
                                 column(3,
                                        align = 'center',
-                                       selectInput('c',
-                                                   'Type of chart',
-                                                   choices = letters)),
+                                       selectInput('country_analysis_chart_type',
+                                                   'Chart type',
+                                                   choices = c('Bars',
+                                                               'Points',
+                                                               'Lines'))),
                                 column(3,
                                        align = 'center',
                                        selectInput('c',
@@ -231,15 +235,14 @@ body <- dashboardBody(
                               ),
                                 br(),
                                 shinydashboard::box(
-                                  title = 'Under construction',
+                                  title = 'Custom plot',
                                   status = 'warning',
                                   solidHeader = TRUE,
                                   background = NULL,
                                   width = 12,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
-                                  h3('Not yet done.',
-                                     align = 'center')
+                                  plotOutput('country_analysis_plot')
                                 ))
                    )
                  ))
@@ -1175,6 +1178,162 @@ server <- function(input, output) {
       prettify_scroll(glossary,
                     scroll_x = TRUE,
                     download_options = TRUE)
+    })
+  
+  output$country_analysis_indicator_ui <-
+    renderUI({
+      years <- input$country_analysis_country_year
+      the_country <- input$country_analysis_country
+      if(is.null(years)){
+        years <- range(df$year, na.rm = TRUE)
+      }
+      available_indicators <- okay_indicators_country %>% 
+        filter(year >= years[1],
+               year <= years[2]) %>%
+        filter(country %in% the_country) %>%
+        .$key %>% unlist
+      available_indicators <- sort(unique(available_indicators))
+      
+      
+      selectInput('country_analysis_indicator',
+                  'Indicators',
+                  choices = available_indicators,
+                  selected = available_indicators[1],
+                  multiple = TRUE)
+    })
+  
+  # Country analysis plot
+  output$country_analysis_plot <-
+    renderPlot({
+      # Get data for country  
+      data <- all_country()
+      # Get filtered years
+      years <- input$country_analysis_country_year
+      the_country <- input$country_analysis_country
+      if(is.null(years)){
+        years <- range(df$year, na.rm = TRUE)
+      }
+      # Filter for only years in question
+      data <- data %>%
+        filter(year >= years[1],
+               year <= years[2]) 
+      # Get chart type
+      chart_type <- input$country_analysis_chart_type
+      
+      # Get indicator
+      indicator <- input$country_analysis_indicator
+      if(is.null(indicator) | length(indicator) > 3 | length(indicator) < 1){
+        # Too many indicators, spit back empty chart
+        ggplot() +
+          theme_landscape() +
+          labs(title = 'Select 1-3 indicators')
+      } else if(nrow(data) == 0)  {
+        # No data, just return empty chart
+        ggplot() +
+          theme_landscape() +
+          labs(title = 'No data available')
+      } else {
+        # Data is good, reshape for plot
+        plot_data <- data %>%
+          filter(key %in% indicator)
+        n_indicators <- length(unique(plot_data$key))
+        cols <- colorRampPalette(brewer.pal(n = 8, name = 'Spectral'))(n_indicators)
+        if(chart_type == 'Bars'){
+          ggplot(data = plot_data) +
+            geom_bar(aes(x = year,
+                         y = value,
+                         fill = key),
+                     stat = 'identity',
+                     position = 'dodge',
+                     alpha = 0.6,
+                     color = 'black') +
+            theme_landscape() +
+            theme(legend.position = 'bottom',
+                  legend.background = element_rect(fill = '#ecf0f5',
+                                                   color = '#ecf0f5')) +
+            scale_fill_manual(name = '',
+                              values = cols) +
+            labs(x = 'Year',
+                 y = '')
+        } else if(chart_type == 'Points'){
+          if(n_indicators == 1){
+            ggplot(data = plot_data,
+                   aes(x = country,
+                       y = value)) +
+              geom_point() +
+              theme_landscape() +
+              labs(x = ' ', y = '') +
+              facet_wrap(~year)
+          } else if(n_indicators == 2){
+            wide <- plot_data %>%
+              spread(key = key, value = value)
+            
+            labs <- names(wide)[5:6]
+            names(wide)[5:6] <- c('x', 'y')
+            ggplot(data = wide,
+                   aes(x = x,
+                       y = y)) +
+              geom_point() +
+              facet_wrap(~year) +
+              labs(x = labs[1],
+                   y = labs[2]) +
+              geom_smooth() +
+              theme_landscape()
+            
+          } else if(n_indicators == 3){
+            wide <- plot_data %>%
+              spread(key = key, value = value)
+            
+            labs <- names(wide)[5:7]
+            names(wide)[5:7] <- c('x', 'y', 'z')
+            ggplot(data = wide,
+                   aes(x = x,
+                       y = y,
+                       color = z)) +
+              geom_point() +
+              facet_wrap(~year) +
+              labs(x = labs[1],
+                   y = labs[2]) +
+              geom_smooth() +
+              theme_landscape() +
+              scale_color_continuous(name = labs[3],
+                                     low = 'darkgreen',
+                                     high = 'red') +
+              theme(legend.position = 'bottom',
+                    legend.background = element_rect(fill = '#ecf0f5',
+                                                     color = '#ecf0f5'))
+            
+          }
+        } else if(chart_type == 'Lines'){
+          ggplot(data = plot_data) +
+            geom_point(aes(x = year,
+                          y = value,
+                          color = key,
+                          group = key),
+                      alpha = 0.9,
+                      size = 2) +
+            geom_line(aes(x = year,
+                         y = value,
+                         color = key,
+                         group = key),
+                     alpha = 1,
+                     size = 2) +
+            theme_landscape() +
+            theme(legend.position = 'bottom',
+                  legend.background = element_rect(fill = '#ecf0f5',
+                                                   color = '#ecf0f5')) +
+            scale_color_manual(name = '',
+                              values = cols) +
+            labs(x = 'Year',
+                 y = '')
+        }
+      } 
+      
+    
+    
+    
+        
+      
     })
   
   
