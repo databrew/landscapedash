@@ -79,7 +79,7 @@ body <- dashboardBody(
                  fluidRow(uiOutput('country_dashboard_country_ui')),
                  fluidRow(
                    tabsetPanel(
-                     # tabPanel('Market overview'),
+                     id = 'tab_country_dashboard',
                      tabPanel('Market overview',
                               br(),
                               fluidRow(
@@ -205,7 +205,20 @@ body <- dashboardBody(
                  fluidRow(uiOutput('country_analysis_country_ui')),
                  fluidRow(
                    tabsetPanel(
-                     tabPanel('Recommended analyses'),
+                     id = 'tab_country_analysis',
+                     tabPanel('Recommended analyses',
+                              br(),
+                              shinydashboard::box(
+                                title = 'Under construction',
+                                status = 'warning',
+                                solidHeader = TRUE,
+                                background = NULL,
+                                width = 12,
+                                collapsible = TRUE,
+                                collapsed = FALSE,
+                                h3('Waiting on input from client',
+                                   align = 'center')
+                              )),
                      tabPanel('Custom analyses',
                               fluidRow(
                                 column(3,
@@ -258,6 +271,7 @@ body <- dashboardBody(
                                multiple = TRUE)),
                  fluidRow(
                    tabsetPanel(
+                     id = 'tab_x_market_analysis',
                      tabPanel('Recommended analyses',
                               br(),
                               shinydashboard::box(
@@ -426,10 +440,19 @@ server <- function(input, output) {
   
   # Observe the download confirmation, and download stuff
   observeEvent(input$download_confirm,{
+    
+    # Get the currently selected tab
+    sidebar_selected <- input$sidebar
+    message('side bar is ', sidebar_selected)
+    tab_name <- paste0('tab_',
+                       tolower(gsub(' ', '_', sidebar_selected)))
+    message('tab name is ', tab_name)
+    tab_selected <- input[[tab_name]]
+    
     showModal(modalDialog(
       title = "Under construction",
       fluidPage(
-        p('Hi Oleksiy! Unfortunately, this functionality has not yet been implemented.')
+        p(paste0('Hi Oleksiy! Unfortunately, this functionality has not yet been implemented. By the way, the currently selected sidebar is ', sidebar_selected, '; tab is ', tab_selected, '.'))
       ),
       easyClose = TRUE,
       footer = NULL
