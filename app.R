@@ -169,7 +169,32 @@ body <- dashboardBody(
                                 collapsed = FALSE,
                                 DT::dataTableOutput('qualitative_overview')
                               )),
-                     tabPanel('Additional analyses')
+                     tabPanel('Additional analyses',
+                              br(),
+                              fluidPage(
+                                fluidRow(
+                                  column(12,
+                                         align = 'center',
+                                         selectInput('country_dashboard_additional_analyses_input',
+                                                     'Select an analysis',
+                                                     choices = c('Analysis 1',
+                                                                 'Analysis 2',
+                                                                 'Analysis 3')))
+                                ),
+                                fluidRow(
+                                  shinydashboard::box(
+                                    title = 'Under construction',
+                                    status = 'warning',
+                                    solidHeader = TRUE,
+                                    background = NULL,
+                                    width = 12,
+                                    collapsible = TRUE,
+                                    collapsed = FALSE,
+                                    h3('Waiting on input from client',
+                                       align = 'center')
+                                  )
+                                )
+                              ))
                    ))
                  
                )
@@ -181,7 +206,41 @@ body <- dashboardBody(
                  fluidRow(
                    tabsetPanel(
                      tabPanel('Recommended analyses'),
-                     tabPanel('Custom analyses')
+                     tabPanel('Custom analyses',
+                              fluidRow(
+                                column(3,
+                                       align = 'center',
+                                       selectInput('a',
+                                                   'Indicator',
+                                                   choices = letters)),
+                                column(3,
+                                       align = 'center',
+                                       selectInput('b',
+                                                   'Year',
+                                                   choices = letters)),
+                                column(3,
+                                       align = 'center',
+                                       selectInput('c',
+                                                   'Type of chart',
+                                                   choices = letters)),
+                                column(3,
+                                       align = 'center',
+                                       selectInput('c',
+                                                   'Benchmark',
+                                                   choices = letters))
+                              ),
+                                br(),
+                                shinydashboard::box(
+                                  title = 'Under construction',
+                                  status = 'warning',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 12,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  h3('Not yet done.',
+                                     align = 'center')
+                                ))
                    )
                  ))
              ),
@@ -196,8 +255,32 @@ body <- dashboardBody(
                                multiple = TRUE)),
                  fluidRow(
                    tabsetPanel(
-                     tabPanel('Recommended analyses'),
-                     tabPanel('Custom analyses')
+                     tabPanel('Recommended analyses',
+                              br(),
+                              shinydashboard::box(
+                                title = 'Under construction',
+                                status = 'warning',
+                                solidHeader = TRUE,
+                                background = NULL,
+                                width = 12,
+                                collapsible = TRUE,
+                                collapsed = FALSE,
+                                h3('Not yet done.',
+                                   align = 'center')
+                              )),
+                     tabPanel('Custom analyses',
+                              br(),
+                              shinydashboard::box(
+                                title = 'Under construction',
+                                status = 'warning',
+                                solidHeader = TRUE,
+                                background = NULL,
+                                width = 12,
+                                collapsible = TRUE,
+                                collapsed = FALSE,
+                                h3('Waiting on input from client',
+                                   align = 'center')
+                              ))
                    )
                  ) 
                )
@@ -1075,10 +1158,11 @@ server <- function(input, output) {
   output$qualitative_overview <-
     DT::renderDataTable({
       this_country <- country()
-      df_qualy %>%
+      x <- df_qualy %>%
         filter(country == this_country) %>%
         dplyr::select(key, value) %>% 
         dplyr::filter(!is.na(value))    
+      DT::datatable(x, rownames = NULL)
       })
   
   
