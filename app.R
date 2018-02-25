@@ -414,6 +414,24 @@ server <- function(input, output) {
         mutate(country = gsub('_', '\n', country)) 
       if(nrow(plot_data) > 0){
         
+        # Get the arrange input
+        arrange_by <- input$dfs_market_overview_plot_arrange
+        if(is.null(arrange_by)){
+          arrange_by <- 'Ascending by value'
+        }
+        
+        # Arrange according to input
+        # (already ascending by value, so no need to modify if that)
+        if(arrange_by == 'Descending by value'){
+          plot_data <- plot_data %>% arrange(desc(value))
+        } else if(arrange_by == 'Alphabetically'){
+          plot_data <- plot_data %>% arrange(country)
+        } else if(arrange_by == 'Reverse alphabetically'){
+          plot_data <- plot_data %>% arrange(desc(country))
+        } else if(arrange_by == 'By region'){
+          plot_data <- plot_data %>% arrange(sub_region)
+        }
+        
         plot_data <- plot_data %>%
           mutate(country = factor(country,
                                   levels = plot_data$country)) %>%
@@ -460,7 +478,24 @@ server <- function(input, output) {
     renderUI({
       make_plot <- input$dfs_market_overview_view == 'Chart view'
       if(make_plot){
-        plotOutput('dfs_market_overview_plot')
+        fluidPage(
+          fluidRow(
+            column(4),
+            column(4,
+                   align = 'center',
+                   selectInput('dfs_market_overview_plot_arrange',
+                               'Arrange chart by',
+                               choices = c('Ascending by value',
+                                           'Descending by value',
+                                           'Alphabetically',
+                                           'Reverse alphabetically',
+                                           'By region'),
+                               selected = 'Ascending by value')),
+            column(4)
+          ),
+          fluidRow(plotOutput('dfs_market_overview_plot'))
+          )
+        
       } else {
         leafletOutput('dfs_market_overview_leaf', height = 500)
       }
