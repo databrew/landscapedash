@@ -383,7 +383,15 @@ body <- dashboardBody(
                  )
                )
              )
-           ))
+           ),
+           fluidRow(column(12,
+                           align = 'center',
+                           br(),
+                           actionButton('download',
+                                        'Download',
+                                        icon = icon('download', 'fa-3x'))))
+           
+           )
   )
 )
 
