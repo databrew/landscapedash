@@ -517,6 +517,24 @@ server <- function(input, output) {
     return(out)
   })
   
+  # Data frame for labeling maps
+  africa_df <- reactive({
+    # Data frame for labeling maps
+    aa <- afr()
+    africa_df <- aa@data
+    coords <- coordinates(aa)
+    africa_df$x <- coords[,1]
+    africa_df$y <- coords[,2]
+    africa_df <- 
+      africa_df %>%
+      arrange(desc(Shape_STAr)) %>%
+      mutate(COUNTRY = gsub(' ', '\n', COUNTRY)) %>%
+      group_by(country = COUNTRY) %>%
+      summarise(x = dplyr::first(x),
+                y = dplyr::first(y))
+    return(africa_df)
+  })
+  
   # Reactive dataset after filtering for region, year and indicator
   df_filtered <- reactive({
     selected_sub_regions <- input$dfs_market_overview_region
@@ -669,9 +687,20 @@ server <- function(input, output) {
       # Get map
       map <- afr()
       coords <- coordinates(map)
+      adf <- africa_df()
       l <- leaflet() %>%
-        addProviderTiles('Stamen.TonerLite') %>%
-        addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE)
+        addProviderTiles('Stamen.TonerBackground') %>%
+        addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE) %>%
+        addLabelOnlyMarkers(data = adf,
+                            lng = adf$x,
+                            lat = adf$y,
+                            label = adf$country,
+                            labelOptions = labelOptions(noHide = TRUE,
+                                                        textsize = '10px',
+                                                        textOnly = TRUE,
+                                                        # direction = 'middle',
+                                                        offset = c(-10,0),
+                                                        opacity = 0.8))
       
       if(nrow(coords) > 0){
         l <- l %>%
