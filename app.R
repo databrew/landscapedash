@@ -689,7 +689,7 @@ server <- function(input, output) {
       coords <- coordinates(map)
       adf <- africa_df()
       l <- leaflet() %>%
-        addProviderTiles('Stamen.TonerBackground') %>%
+        addProviderTiles('CartoDB.PositronNoLabels') %>%
         addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE) %>%
         addLabelOnlyMarkers(data = adf,
                             lng = adf$x,
@@ -789,7 +789,6 @@ server <- function(input, output) {
             #              color = 'black',
             #              weight = 1,
                          # opacity = 1) %>%
-            addProviderTiles('Stamen.TonerHybrid') %>%
             addPolylines(data = map,
                          color = 'black',
                          weight = 1,
