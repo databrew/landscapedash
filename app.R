@@ -31,7 +31,10 @@ sidebar <- dashboardSidebar(
     menuItem(
       text = 'About',
       tabName = 'about',
-      icon = icon('cog', lib = 'glyphicon'))
+      icon = icon('cog', lib = 'glyphicon')),
+    actionButton('download',
+                 'Download',
+                 icon = icon('download', 'fa-1'))
   )
 )
 
@@ -55,13 +58,16 @@ body <- dashboardBody(
                    column(3,
                           uiOutput('dfs_market_overview_indicator_ui')),
                    column(3,
-                          sliderInput('dfs_market_overview_year',
-                                      'Select a year',
-                                      min = min(df$year, na.rm = TRUE),
-                                      max = max(df$year, na.rm = TRUE),
-                                      value = 2016,
-                                      step = 1,
-                                      sep = '')),
+                          selectizeInput('dfs_market_overview_year',
+                                      'Type a desired year',
+                                      choices = seq(min(df$year, na.rm = TRUE),
+                                                    max(df$year, na.rm = TRUE)),
+                                      selected = 2016)),#,
+                                      # min = min(df$year, na.rm = TRUE),
+                                      # max = max(df$year, na.rm = TRUE),
+                                      # value = 2016,
+                                      # step = 1,
+                                      # sep = '')),
                    column(3,
                           radioButtons('dfs_market_overview_view',
                                        label = 'View type',
@@ -397,14 +403,7 @@ body <- dashboardBody(
                  )
                )
              )
-           ),
-           fluidRow(column(12,
-                           align = 'center',
-                           br(),
-                           actionButton('download',
-                                        'Download',
-                                        icon = icon('download', 'fa-3x'))))
-           
+           )
            )
   )
 )
@@ -495,14 +494,15 @@ server <- function(input, output) {
       }
     }
     
+    title <- 'Indicators with data available for selected year and regions'
     if(use_si){
       selectInput('dfs_market_overview_indicator',
-                  'Indicator',
+                  title,
                   choices = available_indicators,
                   selected = si)
     } else {
       selectInput('dfs_market_overview_indicator',
-                  'Indicator',
+                  title,
                   choices = available_indicators)
     }
     
@@ -601,7 +601,10 @@ server <- function(input, output) {
                aes(x = country,
                    y = value)) +
           geom_bar(stat = 'identity',
-                   aes(fill = factor(ranking))) +
+                   fill = 'blue',
+                   alpha = 0.7
+                   # aes(fill = factor(ranking))
+                   ) +
           theme_landscape() +
           theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
           labs(x = '',
@@ -687,21 +690,11 @@ server <- function(input, output) {
       # Get map
       map <- afr()
       coords <- coordinates(map)
-      adf <- africa_df()
+      
       l <- leaflet() %>%
         addProviderTiles('CartoDB.PositronNoLabels') %>%
-        addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE) %>%
-        addLabelOnlyMarkers(data = adf,
-                            lng = adf$x,
-                            lat = adf$y,
-                            label = adf$country,
-                            labelOptions = labelOptions(noHide = TRUE,
-                                                        textsize = '10px',
-                                                        textOnly = TRUE,
-                                                        # direction = 'middle',
-                                                        offset = c(-10,0),
-                                                        opacity = 0.8))
-      
+        addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE)
+        
       if(nrow(coords) > 0){
         l <- l %>%
           fitBounds(min(coords[,1], na.rm = TRUE),
@@ -771,8 +764,7 @@ server <- function(input, output) {
                          format = 'html')
           })
           
-          
-          
+          # adf <- africa_df()
           l <- leafletProxy('dfs_market_overview_leaf') %>% 
             clearControls() %>%
             clearPopups() %>%
@@ -792,7 +784,18 @@ server <- function(input, output) {
             addPolylines(data = map,
                          color = 'black',
                          weight = 1,
-            opacity = 1)
+            opacity = 1)# %>%
+            # addLabelOnlyMarkers(layerId = 'country_names',
+                                # data = adf,
+                                # lng = adf$x,
+                                # lat = adf$y,
+                                # label = adf$country,
+                                # labelOptions = labelOptions(noHide = TRUE,
+                                #                             textsize = '5px',
+                                #                             textOnly = TRUE,
+                                #                             # direction = 'middle',
+                                #                             offset = c(-10,0),
+                                #                             opacity = 0.8))
           l <- l %>%
             addLegend(pal = pal, values = map@data$value, opacity = 0.7,
                       position = "bottomright",
@@ -802,6 +805,28 @@ server <- function(input, output) {
           
         }
       })
+  
+  # Observe zoom and change
+  observeEvent(input$dfs_market_overview_leaf_zoom, {
+    adf <- africa_df()
+    zoom_level <- input$dfs_market_overview_leaf_zoom
+    message('Zoom level is ', zoom_level)
+    text_size <- paste0((zoom_level * 2)^1.3, 'px')
+    leafletProxy('dfs_market_overview_leaf') %>%
+      # removeMarker(layerId = 'country_names') %>%
+      # clearGroup(layerId = 'country_names') %>%
+      addLabelOnlyMarkers(layerId = 'country_names',
+                          data = adf,
+                          lng = adf$x,
+                          lat = adf$y,
+                          label = adf$country,
+                          labelOptions = labelOptions(noHide = TRUE,
+                                                      textsize = text_size,
+                                                      textOnly = TRUE,
+                                                      # direction = 'middle',
+                                                      offset = c(-10,0),
+                                                      opacity = 0.8))
+  })
   
   # reactive object that filters by country
   all_country <- reactive({
@@ -990,7 +1015,7 @@ server <- function(input, output) {
         labs(x = '',
              y = '',
              title = '',
-             subtitle = paste0('Data as of ', most_recent)) +
+             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
         scale_fill_manual(name = '',
                           values = cols) +
         theme(axis.text.x = element_text(
@@ -1062,7 +1087,7 @@ server <- function(input, output) {
         labs(x = '',
              y = '',
              title = '',
-             subtitle = paste0('Data as of ', most_recent)) +
+             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
         scale_fill_manual(name = '',
                           values = cols) +
         theme(axis.text.x = element_text(
@@ -1143,7 +1168,7 @@ server <- function(input, output) {
         labs(x = '',
              y = '',
              title = '',
-             subtitle = paste0('Data as of ', most_recent)) +
+             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
         scale_fill_manual(name = '',
                           values = cols) +
         theme(axis.text.x = element_text(
@@ -1226,7 +1251,7 @@ server <- function(input, output) {
         labs(x = '',
              y = '',
              title = '',
-             subtitle = paste0('Data as of ', most_recent)) +
+             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
         scale_fill_manual(name = '',
                           values = cols) +
         theme(axis.text.x = element_text(
