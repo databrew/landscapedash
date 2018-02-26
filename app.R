@@ -521,18 +521,18 @@ server <- function(input, output) {
   africa_df <- reactive({
     # Data frame for labeling maps
     aa <- afr()
-    africa_df <- aa@data
+    aa_df <- aa@data
     coords <- coordinates(aa)
-    africa_df$x <- coords[,1]
-    africa_df$y <- coords[,2]
-    africa_df <- 
-      africa_df %>%
+    aa_df$x <- coords[,1]
+    aa_df$y <- coords[,2]
+    aa_df <- 
+      aa_df %>%
       arrange(desc(Shape_STAr)) %>%
       mutate(COUNTRY = gsub(' ', '\n', COUNTRY)) %>%
       group_by(country = COUNTRY) %>%
       summarise(x = dplyr::first(x),
                 y = dplyr::first(y))
-    return(africa_df)
+    return(aa_df)
   })
   
   # Reactive dataset after filtering for region, year and indicator
@@ -811,12 +811,14 @@ server <- function(input, output) {
     adf <- africa_df()
     zoom_level <- input$dfs_market_overview_leaf_zoom
     message('Zoom level is ', zoom_level)
-    text_size <- paste0((zoom_level * 2)^1.3, 'px')
+    text_size <- paste0((round(zoom_level * 1.5)^1.3), 'px')
     leafletProxy('dfs_market_overview_leaf') %>%
       # removeMarker(layerId = 'country_names') %>%
       # clearGroup(layerId = 'country_names') %>%
-      addLabelOnlyMarkers(layerId = 'country_names',
-                          data = adf,
+      clearGroup(group = 'country_names') %>%
+      addLabelOnlyMarkers(#layerId = 'country_names',
+                          # data = adf,
+        group = 'country_names',
                           lng = adf$x,
                           lat = adf$y,
                           label = adf$country,
