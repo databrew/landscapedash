@@ -49,15 +49,15 @@ body <- dashboardBody(
                tabName="dfs_market_overivew",
                fluidPage(
                  fluidRow(
-                   column(3,
+                   column(4,
                           selectInput('dfs_market_overview_region',
                                       'Region',
                                       choices = sub_regions,
                                       selected = sub_regions,
                                       multiple = TRUE)),
-                   column(3,
+                   column(4,
                           uiOutput('dfs_market_overview_indicator_ui')),
-                   column(3,
+                   column(2,
                           selectizeInput('dfs_market_overview_year',
                                       'Type a desired year',
                                       choices = seq(min(df$year, na.rm = TRUE),
@@ -68,7 +68,7 @@ body <- dashboardBody(
                                       # value = 2016,
                                       # step = 1,
                                       # sep = '')),
-                   column(3,
+                   column(2,
                           radioButtons('dfs_market_overview_view',
                                        label = 'View type',
                                        choices = c('Map view',
@@ -94,6 +94,25 @@ body <- dashboardBody(
                                 column(9,
                                        h3(textOutput('region_text')))
                               ),
+                              fluidRow(
+                                shinydashboard::box(
+                                  title = 'Level of DFS market development',
+                                  footer = '',
+                                  status = 'warning',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 12,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  fluidPage(
+                                    column(6,
+                                           plotOutput('level_of_dfs_market_development')),
+                                    column(6,
+                                           plotOutput('level_of_dfs_market_development2'))
+                                  )
+                                )
+                              ),
+                              
                               fluidRow(
                                 shinydashboard::box(
                                   title = 'Digital Financial Services Market',
@@ -560,7 +579,7 @@ server <- function(input, output) {
       }
     }
     
-    title <- 'Indicators with data available for selected year and regions'
+    title <- 'Indicator'
     if(use_si){
       selectInput('dfs_market_overview_indicator',
                   title,
@@ -1664,6 +1683,92 @@ server <- function(input, output) {
       the_region <- the_region[1]
       paste0('Region: ', the_region)
     })
+  
+  output$level_of_dfs_market_development <- renderPlot({
+    # Get data for first plot
+    sub_dat <- all_country()
+    # Define indicators
+    keys <- c('MM or FI account',
+              'Mobile money',
+              'Mobile banking',
+              'Debit cards',
+              'Credit cards')
+    right <- 
+      sub_dat %>%
+      filter(!is.na(value)) %>%
+      filter(key %in% keys) %>%
+      dplyr::distinct(key, value)
+    left <- data_frame(key = keys)
+    joined <- left_join(left,
+                        right,
+                        by = 'key')
+    joined$key <- gsub(' ', '\n', joined$key)
+    joined$key <- factor(joined$key, levels = unique(joined$key))
+    g1 <- ggplot(data = joined,
+           aes(x = key,
+               y = value)) +
+      geom_bar(stat = 'identity',
+               alpha = 0.7,
+               fill = 'darkblue') +
+      theme_landscape() +
+      labs(x = '', y = '',
+           title = 'DFS penetration: % of adults who use...') #+
+      # theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    
+    g2 <- 
+      ggplot(data = data.frame(x = c('Mobile money',
+                                     'Internet banking',
+                                     'E-commerce (cards)',
+                                     'POS (cards)',
+                                     'Debit cheques',
+                                     'RTGS'),
+                               key = rep(c('Value (USD Bio)', 'Volume (Mio)'), each=2),
+                               y = rnorm(n = 12, mean = 1000, sd = 200)),
+             aes(x = x,
+                 y = y,
+                 group = key,
+                 fill = key)) +
+      geom_bar(stat = 'identity',
+               alpha = 0.7,
+               position = 'dodge') +
+      theme_landscape() +
+      labs(x = '', y = '',
+           title = 'Transactions',
+           subtitle = '(Just a placeholder chart; not yet imlemented)') +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_fill_manual(name = '',
+                        values = c('darkorange', 'blue')) 
+    
+    Rmisc::multiplot(g1, g2)
+  })
+  
+  output$level_of_dfs_market_development2 <- renderPlot({
+    ggplot(data = data.frame(x = c('MM account penetration (adults) %',
+                                     'MM transactions per 1000 adults (thousands)',
+                                     'MM trans value/GDP (%)',
+                                     'Value per transaction (USD)',
+                                     'Transaction value per account (USD)'),
+                               key = rep(c('Kenya',
+                                           'Average SSA', 
+                                           'Highest SSA'), each=5),
+                               y = rnorm(n = 15, mean = 1000, sd = 200)) %>%
+             mutate(x = gsub(' ', '\n', x)),
+             aes(x = x,
+                 y = y,
+                 group = key,
+                 fill = key)) +
+      geom_bar(stat = 'identity',
+               alpha = 0.7,
+               position = 'dodge') +
+      theme_landscape() +
+      labs(x = '', y = '',
+           title = 'Relative Level of Mobile Money Market Development',
+           subtitle = '(Just a placeholder chart; not yet imlemented)') +
+      # theme(axis.text.x = element_text(angle = 45, hjust = 1,
+      #                                  size = 9)) +
+      scale_fill_manual(name = '',
+                        values = c('darkorange', 'blue', 'grey')) 
+  })
 }
 
 shinyApp(ui, server)

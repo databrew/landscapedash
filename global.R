@@ -724,6 +724,30 @@ df$key[df$key == '# of unbanked adults'] <- 'Nu of unbanked'
 df$key[df$key == 'Poverty headcount ratio at $2 a day PPP % of population'] <- '% of population living below $1.9 PPP'
 df$key[df$key == 'Urban population % of total'] <- 'Share of urban population'
 df$key[df$key == 'Literacy rate, adult total % of people ages 15 and above'] <- 'Literacy rate'
+new_rows <- df %>%
+  filter(key == "Account % age 15 ts") %>%
+  mutate(key = 'MM or FI account')
+df <- df %>% bind_rows(new_rows)
+
+new_rows <- df %>%
+  filter(key == 'Mobile account % age 15 w2') %>%
+  mutate(key = 'Mobile money')
+df <- df %>% bind_rows(new_rows)
+
+new_rows <- df %>%
+  filter(key == 'Used an account to make a transaction through a mobile phone % age 15 w2') %>%
+  mutate(key = 'Mobile banking')
+df <- df %>% bind_rows(new_rows)
+
+new_rows <- df %>%
+  filter(key == 'Debit card % age 15 ts') %>%
+  mutate(key = 'Debit cards')
+df <- df %>% bind_rows(new_rows)
+
+new_rows <- df %>%
+  filter(key == 'Credit card % age 15 ts') %>%
+  mutate(key = 'Credit cards')
+df <- df %>% bind_rows(new_rows)
 
 # Make sure most recent data at top
 df <- 
