@@ -89,6 +89,12 @@ body <- dashboardBody(
                      tabPanel('Market overview',
                               br(),
                               fluidRow(
+                                column(3,
+                                       h3(textOutput('country_text'))),
+                                column(9,
+                                       h3(textOutput('region_text')))
+                              ),
+                              fluidRow(
                                 shinydashboard::box(
                                   title = 'Digital Financial Services Market',
                                   footer = '',
@@ -1514,6 +1520,19 @@ server <- function(input, output) {
                  y = '')
         }
       } 
+    })
+  
+  output$country_text <- 
+    renderText({
+      the_country <- country()
+      paste0('Country: ', the_country)
+    })
+  output$region_text <-
+    renderText({
+      the_country <- country()
+      the_region <- africa@data$sub_region[africa@data$country == the_country]
+      the_region <- the_region[1]
+      paste0('Region: ', the_region)
     })
 }
 
