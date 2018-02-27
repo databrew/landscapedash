@@ -706,8 +706,13 @@ df <- df %>%
                       key)) %>%
   dplyr::select(-`Indicator Name`, key_original)
 
+# Manual column name changes
 df$key[df$key == 'Number of cards debitcredit'] <- 'Number of cards (debit+credit)'
-
+df$key[df$key == 'Mobile money agents'] <- 'Registered MM agents'
+df$key[df$key == 'Number of agents of other non-bank PSPs'] <- 'MM bank agents'
+df$key[df$key == 'Number of agents of commercial banks'] <- 'MM non-bank agents'
+df$key[df$key == 'Automated Teller Machines ATMs'] <- 'ATMs'
+df$key[df$key == 'Number of POS terminals'] <- 'POS'
 # Make sure most recent data at top
 df <- 
   df %>%

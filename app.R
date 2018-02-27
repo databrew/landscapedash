@@ -95,11 +95,24 @@ body <- dashboardBody(
                                   status = 'primary',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 4,
+                                  width = 6,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   fluidPage(
                                     DT::dataTableOutput('digital_financial_services_market_table')
+                                  )
+                                ),
+                                shinydashboard::box(
+                                  title = 'Financial access points',
+                                  footer = '',
+                                  status = 'primary',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  fluidPage(
+                                    DT::dataTableOutput('financial_access_points_table')
                                   )
                                 )
                               ),
@@ -871,13 +884,14 @@ server <- function(input, output) {
       # if no values)
       left <- data_frame(key = columns)
       # Get country-specific values
-      right <- sub_data %>% 
+      right <- sub_dat %>% 
         dplyr::filter(key %in% columns) %>%
         dplyr::distinct(key, value, .keep_all = TRUE) %>%
         dplyr::filter(!duplicated(key)) %>%
         dplyr::select(key, value)
       # Joined
-      joined <- left_join(left, right)
+      joined <- left_join(left, right,
+                          by = 'key')
       
       DT::datatable(joined,
                     colnames = c('', ''),
@@ -885,6 +899,38 @@ server <- function(input, output) {
                     options=list(dom='t',
                                  ordering=F,
                                  pageLength = nrow(joined)))
+    })
+  
+  # Financial access points table
+  output$financial_access_points_table <- 
+    DT::renderDataTable({
+      sub_dat <- all_country()
+      columns <- c('Registered MM agents',
+                   'MM bank agents',
+                   'MM non-bank agents',
+                   'Bank branches',
+                   'ATMs',
+                   'POS')
+      # Create left side of table (to ensure that the table is there even
+      # if no values)
+      left <- data_frame(key = columns)
+      # Get country-specific values
+      right <- sub_dat %>% 
+        dplyr::filter(key %in% columns) %>%
+        dplyr::distinct(key, value, .keep_all = TRUE) %>%
+        dplyr::filter(!duplicated(key)) %>%
+        dplyr::select(key, value)
+      # Joined
+      joined <- left_join(left, right,
+                          by = 'key')
+      
+      DT::datatable(joined,
+                    colnames = c('', ''),
+                    rownames = FALSE,
+                    options=list(dom='t',
+                                 ordering=F,
+                                 pageLength = nrow(joined)))
+      
     })
   
   # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
