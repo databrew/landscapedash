@@ -90,6 +90,21 @@ body <- dashboardBody(
                               br(),
                               fluidRow(
                                 shinydashboard::box(
+                                  title = 'Digital Financial Services Market',
+                                  footer = '',
+                                  status = 'primary',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 4,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  fluidPage(
+                                    DT::dataTableOutput('digital_financial_services_market_table')
+                                  )
+                                )
+                              ),
+                              fluidRow(
+                                shinydashboard::box(
                                   title = 'Mobile Money Market',
                                   footer = '',
                                   status = 'primary',
@@ -849,8 +864,27 @@ server <- function(input, output) {
       columns <- c('Registered MM Accounts',
                    'MM transaction volume',
                    'MM Transaction Value',
-                   'Number of cards (debit+credit)')
-      # UNDER CONSTRUCTION
+                   'Number of cards (debit+credit)',
+                   'Card payment trans. Value',
+                   'Internet banking Trans. Value')
+      # Create left side of table (to ensure that the table is there even
+      # if no values)
+      left <- data_frame(key = columns)
+      # Get country-specific values
+      right <- sub_data %>% 
+        dplyr::filter(key %in% columns) %>%
+        dplyr::distinct(key, value, .keep_all = TRUE) %>%
+        dplyr::filter(!duplicated(key)) %>%
+        dplyr::select(key, value)
+      # Joined
+      joined <- left_join(left, right)
+      
+      DT::datatable(joined,
+                    colnames = c('', ''),
+                    rownames = FALSE,
+                    options=list(dom='t',
+                                 ordering=F,
+                                 pageLength = nrow(joined)))
     })
   
   # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
@@ -1434,15 +1468,7 @@ server <- function(input, output) {
                  y = '')
         }
       } 
-      
-    
-    
-    
-        
-      
     })
-  
-  
 }
 
 shinyApp(ui, server)

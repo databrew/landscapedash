@@ -381,7 +381,7 @@ if('prepared_data.RData' %in% dir()){
   gpss_retail_transactions <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                                          sheet = 'GPSS Retail transactions')
   
-  # remove country code
+   # remove country code
   gpss_retail_transactions$`Country code` <- NULL
   
   # rename Country name to country and year
@@ -407,6 +407,32 @@ if('prepared_data.RData' %in% dir()){
   
   gpss_retail_transactions$`Variable name (see variable key in C1)` <- NULL
   
+  # Create some extra metrics
+  extra_metrics <- 
+    gpss_retail_transactions %>%
+    filter(key %in% c('Value in USD Credit card',
+                      'Value in USD Debit card')) %>%
+    group_by(country, year) %>%
+    summarise(value = sum(value, na.rm = TRUE)) %>%
+    mutate(key = 'Card payment trans. Value') %>%
+    ungroup 
+  
+  gpss_retail_transactions <- 
+    bind_rows(gpss_retail_transactions,
+              extra_metrics)
+
+  extra_metrics <- 
+    gpss_retail_transactions %>%
+    filter(key %in% c('Value in USD Credit transfers internet')) %>%
+    group_by(country, year) %>%
+    summarise(value = sum(value, na.rm = TRUE)) %>%
+    mutate(key = 'Internet banking Trans. Value') %>%
+    ungroup 
+  
+  gpss_retail_transactions <- 
+    bind_rows(gpss_retail_transactions,
+              extra_metrics)
+  
   ##########
   # Read in gpps accounts
   ##########
@@ -420,13 +446,13 @@ if('prepared_data.RData' %in% dir()){
   gpps_accounts$year <- unlist(lapply(strsplit(gpps_accounts$year, "__"), function(x){x[1]}))
   # Manual create dictionary for the pre header row
   dict <- data.frame(key = as.character(0:6),
-                     new_key = c('I. Number of deposit transaction accounts',
-                                 '2. Number of debit cards in circulation',
-                                 '3. Number of credit cards in circulation',
-                                 '4. Number of e-money accounts',
-                                 '5. Number of card-based e-money accounts',
-                                 '6. Number of mobile money accounts',
-                                 '7. Number of online money accounts'))
+                     new_key = c('Number of deposit transaction accounts',
+                                 'Number of debit cards in circulation',
+                                 'Number of credit cards in circulation',
+                                 'Number of e-money accounts',
+                                 'Number of card-based e-money accounts',
+                                 'Number of mobile money accounts',
+                                 'Number of online money accounts'))
   # Join 
   gpps_accounts <-
     left_join(gpps_accounts,
@@ -443,6 +469,20 @@ if('prepared_data.RData' %in% dir()){
   filter(Country != 'Africa') %>%
     dplyr::rename(country = Country) %>%
     dplyr::mutate(value = as.numeric(value))
+  
+  # Create some new metrics
+  new_metrics <- gpps_accounts %>%
+    dplyr::filter(key %in%
+                    c('Number of credit cards in circulation',
+                      'Number of debit cards in circulation')) %>%
+    group_by(country,year) %>%
+    summarise(value = sum(value, na.rm = TRUE)) %>%
+    ungroup %>%
+    mutate(key = 'Number of cards (debit+credit)')
+  
+  gpps_accounts <-
+    bind_rows(gpps_accounts,
+              new_metrics)
   
   ##########
   # gpps access points
@@ -461,19 +501,19 @@ if('prepared_data.RData' %in% dir()){
   gpps_access_points$year <- unlist(lapply(strsplit(gpps_access_points$year, "__"), function(x){x[1]}))
   # Manual create dictionary for the pre header row
   dict <- data.frame(key = as.character(0:12),
-                     new_key = c('1. Number of ATMs',
-                                 '2. Number of POS terminals',
-                                 '3. Number of merchants',
-                                 '4. Number of ATM networks',
-                                 '5. Number of POS networks',
-                                 '6. Total number of branches of PSPs',
-                                 '6.a Of which: Number of branches of commercial banks',
-                                 '6.b Number of branches of other deposit-taking institutions',
-                                 '6.c Number of branches of other PSPs',
-                                 '7. Total number of agents',
-                                 '7.a Number of agents of commercial banks',
-                                 '7.b Number of agents of other deposit-taking institutions',
-                                 '7.c Number of agents of other non-bank PSPs'))
+                     new_key = c('Number of ATMs',
+                                 'Number of POS terminals',
+                                 'Number of merchants',
+                                 'Number of ATM networks',
+                                 'Number of POS networks',
+                                 'Total number of branches of PSPs',
+                                 'Of which: Number of branches of commercial banks',
+                                 'Number of branches of other deposit-taking institutions',
+                                 'Number of branches of other PSPs',
+                                 'Total number of agents',
+                                 'Number of agents of commercial banks',
+                                 'Number of agents of other deposit-taking institutions',
+                                 'Number of agents of other non-bank PSPs'))
   # Join 
   gpps_access_points <-
     left_join(gpps_access_points,
@@ -665,3 +705,10 @@ df <- df %>%
                       `Indicator Name`,
                       key)) %>%
   dplyr::select(-`Indicator Name`, key_original)
+
+df$key[df$key == 'Number of cards debitcredit'] <- 'Number of cards (debit+credit)'
+
+# Make sure most recent data at top
+df <- 
+  df %>%
+  arrange(desc(year), country, key)
