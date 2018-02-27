@@ -122,6 +122,38 @@ body <- dashboardBody(
                                   )
                                 )
                               ),
+                              
+                              
+                              fluidRow(
+                                shinydashboard::box(
+                                  title = 'Drivers of DFS growth',
+                                  footer = '',
+                                  status = 'primary',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  fluidPage(
+                                    DT::dataTableOutput('drivers_of_dfs_growth_table')
+                                  )
+                                ),
+                                shinydashboard::box(
+                                  title = 'Macro drivers of growth',
+                                  footer = '',
+                                  status = 'primary',
+                                  solidHeader = TRUE,
+                                  background = NULL,
+                                  width = 6,
+                                  collapsible = TRUE,
+                                  collapsed = FALSE,
+                                  fluidPage(
+                                    DT::dataTableOutput('macro_drivers_of_growth_table')
+                                  )
+                                )
+                              ),
+                              
+                              
                               fluidRow(
                                 shinydashboard::box(
                                   title = 'Mobile Money Market',
@@ -1520,6 +1552,67 @@ server <- function(input, output) {
                  y = '')
         }
       } 
+    })
+  
+  output$drivers_of_dfs_growth_table <- 
+    DT::renderDataTable({
+      
+      a_country <- country()
+      sub_dat <- all_country()
+      keys <- c('Regulatory environment',
+                'Unique mobile penetration',
+                'Smartphone penetration',
+                '% of adults with FI account(1)',
+                'Tech Hubs')
+      out <- sub_dat %>%
+        filter(year <= as.numeric(format(Sys.Date(), '%Y'))) %>%
+        filter(key %in% keys) %>%
+        dplyr::select(key, value) %>%
+        distinct(key, value)
+      out$value <- as.character(out$value)
+      
+      # Get 2020 data
+      out2020 <- sub_dat %>%
+        filter(year == 2020) %>%
+        filter(key %in% keys) %>%
+        dplyr::select(key, value) %>%
+        distinct(key, value)
+      out2020$`2020` <- as.character(out2020$value)
+      out2020$value <- NULL
+      
+      x <- data_frame(key = keys[1],
+                      value = qualy$value[qualy$key == 'Regulatory Environment' & 
+                                        qualy$country == a_country])
+      out <- bind_rows(x,
+                       out)
+      
+      # Get a left side
+      left <- data_frame(key = keys)
+      # Join together
+      joined <- left_join(left, right,
+                          by = 'key')
+      # Join with 2020 stuff
+      joined <- left_join(joined,
+                          out2020,
+                          by = 'key')
+
+      DT::datatable(joined,
+                    colnames = c('', ''),
+                    rownames = FALSE,
+                    options=list(dom='t',
+                                 ordering=F,
+                                 pageLength = nrow(joined)))
+    })
+  
+  output$macro_drivers_of_growth_table <- 
+    DT::renderDataTable({
+      DT::datatable(data.frame(a = 1:3,
+                               b = 2:4),
+                    colnames = c('', ''),
+                    rownames = FALSE,
+                    options=list(dom='t',
+                                 ordering=F,
+                                 pageLength = nrow(joined)))
     })
   
   output$country_text <- 
