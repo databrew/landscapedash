@@ -833,17 +833,25 @@ server <- function(input, output) {
   # reactive object that filters by country
   all_country <- reactive({
     a_country <- country()
-    # sub_country <- df %>% dplyr::filter(grepl(a_country, df$country))
     sub_country <- df %>% dplyr::filter(country == a_country)
-    
   })
   
   # reactive object that filters by country
   get_regions <- reactive({
-
     region_dat <- df %>% dplyr::select(sub_region, key, year, value)
-
   })
+  
+  # Digital financial services market table
+  output$digital_financial_services_market_table <- 
+    DT::renderDataTable({
+      sub_dat <- all_country()
+      # Keep only the relevant columns
+      columns <- c('Registered MM Accounts',
+                   'MM transaction volume',
+                   'MM Transaction Value',
+                   'Number of cards (debit+credit)')
+      # UNDER CONSTRUCTION
+    })
   
   # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
   # and (2) the last two, the drivers of dfs growth

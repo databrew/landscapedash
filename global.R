@@ -408,6 +408,92 @@ if('prepared_data.RData' %in% dir()){
   gpss_retail_transactions$`Variable name (see variable key in C1)` <- NULL
   
   ##########
+  # Read in gpps accounts
+  ##########
+  gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+                       sheet = 'GPPS Accounts',
+                       skip = 5)
+  # Make long
+  gpps_accounts <- gather(gpps_accounts, year, value, `2015`:`2010__6`)
+  gpps_accounts$key <- unlist(lapply(strsplit(gpps_accounts$year, "__"), function(x){x[2]}))
+  gpps_accounts$key[is.na(gpps_accounts$key)] <- 0
+  gpps_accounts$year <- unlist(lapply(strsplit(gpps_accounts$year, "__"), function(x){x[1]}))
+  # Manual create dictionary for the pre header row
+  dict <- data.frame(key = as.character(0:6),
+                     new_key = c('I. Number of deposit transaction accounts',
+                                 '2. Number of debit cards in circulation',
+                                 '3. Number of credit cards in circulation',
+                                 '4. Number of e-money accounts',
+                                 '5. Number of card-based e-money accounts',
+                                 '6. Number of mobile money accounts',
+                                 '7. Number of online money accounts'))
+  # Join 
+  gpps_accounts <-
+    left_join(gpps_accounts,
+              dict,
+              by = 'key')
+  gpps_accounts <- gpps_accounts %>%
+    mutate(key = new_key) %>%
+    dplyr::select(-new_key)
+  
+  # Remove the garbage
+  gpps_accounts <- 
+    gpps_accounts %>%
+    filter(!is.na(Country)) %>%
+  filter(Country != 'Africa') %>%
+    dplyr::rename(country = Country) %>%
+    dplyr::mutate(value = as.numeric(value))
+  
+  ##########
+  # gpps access points
+  ##########
+  gpps_access_points <- 
+    read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+               sheet = 'GPPS Access points',
+               skip = 1)
+  # names(gpps_access_points)[7] <- 
+  # gpps_access_points$`2010` <- as.numeric(unlist(gpps_access_points[,7]))
+  
+  # Make long
+  gpps_access_points <- gather(gpps_access_points, year, value, `2015`:`2010__11`)
+  gpps_access_points$key <- unlist(lapply(strsplit(gpps_access_points$year, "__"), function(x){x[2]}))
+  gpps_access_points$key[is.na(gpps_access_points$key)] <- 0
+  gpps_access_points$year <- unlist(lapply(strsplit(gpps_access_points$year, "__"), function(x){x[1]}))
+  # Manual create dictionary for the pre header row
+  dict <- data.frame(key = as.character(0:12),
+                     new_key = c('1. Number of ATMs',
+                                 '2. Number of POS terminals',
+                                 '3. Number of merchants',
+                                 '4. Number of ATM networks',
+                                 '5. Number of POS networks',
+                                 '6. Total number of branches of PSPs',
+                                 '6.a Of which: Number of branches of commercial banks',
+                                 '6.b Number of branches of other deposit-taking institutions',
+                                 '6.c Number of branches of other PSPs',
+                                 '7. Total number of agents',
+                                 '7.a Number of agents of commercial banks',
+                                 '7.b Number of agents of other deposit-taking institutions',
+                                 '7.c Number of agents of other non-bank PSPs'))
+  # Join 
+  gpps_access_points <-
+    left_join(gpps_access_points,
+              dict,
+              by = 'key')
+  gpps_access_points <- gpps_access_points %>%
+    mutate(key = new_key) %>%
+    dplyr::select(-new_key)
+  
+  # Remove the garbage
+  gpps_access_points <- 
+    gpps_access_points %>%
+    filter(!is.na(Country)) %>%
+    filter(Country != 'Africa') %>%
+    dplyr::rename(country = Country) %>%
+    dplyr::mutate(value = as.numeric(value))
+  
+  #####
+  
+  ##########
   # read in WEBDev Ind and clean
   ##########
   wb_dev <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
@@ -451,6 +537,8 @@ if('prepared_data.RData' %in% dir()){
                   findex_original,
                   gdp,
                   gpss_retail_transactions,
+                  gpps_accounts,
+                  gpps_access_points,
                   smart_phone_adoption,
                   tech_hubs,
                   ufa,
@@ -508,7 +596,19 @@ if('prepared_data.RData' %in% dir()){
     arrange(year) %>%
     filter(ok)
   
-  
+  # Correct country names
+  df <- df %>%
+    mutate(country = 
+             ifelse(country == 'Cabo Verde',
+                    'Cape Verde',
+                    ifelse(country == 'Congo (Democratic Republic of the)',
+                           'Congo DRC',
+                           ifelse(grepl('saint helen', tolower(country)),
+                                        'Saint Helena',
+                                  ifelse(grepl('tanzania', tolower(country)),
+                                         'Tanzania',
+                                         country)))))
+
   save(africa,
        df,
        df_qualy, 
@@ -550,3 +650,18 @@ df$year[is.na(df$year)] <- 2017
 # No repeats
 df <- df %>%
   dplyr::distinct(country, key, year, value, .keep_all = TRUE)
+
+
+# Replace the key with the "cleaned" indicator name from the glossary
+df <- df %>%
+  mutate(key_original = key) %>%
+  left_join(glossary %>%
+              dplyr::select(`Indicator Name in source`,
+                            `Indicator Name`) %>%
+              dplyr::rename(key_original = `Indicator Name in source`),
+            by = 'key_original') %>%
+  # Overwrite the key if there is an equivalent name in the glossary
+  mutate(key = ifelse(!is.na(`Indicator Name`),
+                      `Indicator Name`,
+                      key)) %>%
+  dplyr::select(-`Indicator Name`, key_original)
