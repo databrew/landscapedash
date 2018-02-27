@@ -1606,8 +1606,41 @@ server <- function(input, output) {
   
   output$macro_drivers_of_growth_table <- 
     DT::renderDataTable({
-      DT::datatable(data.frame(a = 1:3,
-                               b = 2:4),
+      sub_dat <- all_country()
+      # Keep only the relevant columns
+      columns <- c('Adult population',
+                   'GDP per capita (PPP)',
+                   'GDP growth forecast (20)',
+                   'Bank assets/GDP',
+                   'Nu of unbanked',
+                   '% of population living below $1.9 PPP',
+                   'Share of urban population',
+                    'Literacy rate')
+      # Filter down to keep only relevant columns
+      # Create left side of table (to ensure that the table is there even
+      # if no values)
+      left <- data_frame(key = columns)
+      # Get country-specific values
+      right <- sub_dat %>% 
+        dplyr::filter(key %in% columns) %>%
+        dplyr::distinct(key, value, .keep_all = TRUE) %>%
+        dplyr::filter(!duplicated(key)) %>%
+        dplyr::select(key, value)
+      # Get 2020 growth forecast
+      growth <- 
+        sub_dat %>%
+        filter(year == 2020) %>%
+        filter(key == 'Real GDP Growth Annual Percent Change') %>%
+        dplyr::select(key, value) %>%
+        sample_n(1) %>%
+        mutate(key = 'GDP growth forecast (20)')
+      right <- bind_rows(right, growth)
+      # Joined
+      joined <- left_join(left, right,
+                          by = 'key')
+      joined$value <- round(joined$value, digits = 1)
+      
+      DT::datatable(joined,
                     colnames = c('', ''),
                     rownames = FALSE,
                     options=list(dom='t',

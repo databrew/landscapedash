@@ -657,6 +657,7 @@ if('prepared_data.RData' %in% dir()){
        okay_indicators,
        okay_indicators_country,
        countries_by_region,
+       wb_dev,
        file = 'prepared_data.RData')
 }
 
@@ -716,6 +717,13 @@ df$key[df$key == 'Number of POS terminals'] <- 'POS'
 df$key[df$key == 'Q4 Percentage Unique Subscribers'] <- 'Unique mobile penetration'
 df$key[df$key == 'Q4 Percentage with Smart Phone'] <- 'Smartphone penetration'
 df$key[df$key == 'Account at a financial institution % age 15 w1'] <- '% of adults with FI account(1)'
+df$key[df$key == 'Population, age 15'] <- 'Adult population'
+df$key[df$key == 'GDP per capita, PPP current international $'] <- 'GDP per capita (PPP)'
+df$key[df$key == 'Total Assets \r\nUS$ Million in US$ Million'] <- 'Bank assets/GDP'
+df$key[df$key == '# of unbanked adults'] <- 'Nu of unbanked'
+df$key[df$key == 'Poverty headcount ratio at $2 a day PPP % of population'] <- '% of population living below $1.9 PPP'
+df$key[df$key == 'Urban population % of total'] <- 'Share of urban population'
+df$key[df$key == 'Literacy rate, adult total % of people ages 15 and above'] <- 'Literacy rate'
 
 # Make sure most recent data at top
 df <- 
