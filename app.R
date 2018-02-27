@@ -1631,9 +1631,13 @@ server <- function(input, output) {
         sub_dat %>%
         filter(year == 2020) %>%
         filter(key == 'Real GDP Growth Annual Percent Change') %>%
-        dplyr::select(key, value) %>%
-        sample_n(1) %>%
-        mutate(key = 'GDP growth forecast (20)')
+        dplyr::select(key, value)
+      if(nrow(growth) >= 1){
+        growth <- growth %>%
+          mutate(key = 'GDP growth forecast (20)')
+        growth <- growth[1,]
+      }
+        
       right <- bind_rows(right, growth)
       # Joined
       joined <- left_join(left, right,
