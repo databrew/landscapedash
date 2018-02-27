@@ -510,12 +510,11 @@ server <- function(input, output) {
         fluidRow(
           column(8,
                  radioButtons('download_type', 'What would you like to download?',
-                              choices = c('Raw data (csv)',
-                                          'Chart (png)',
+                              choices = c('Data (csv)',
                                           'Report (pdf)'))),
           column(4,
                  actionButton('download_confirm',
-                              'Download',
+                              'Next',
                               icon = icon('download')))
         )
       ),
@@ -536,14 +535,36 @@ server <- function(input, output) {
     tab_selected <- input[[tab_name]]
     
     showModal(modalDialog(
-      title = "Under construction",
+      title = "Download scope",
       fluidPage(
-        p(paste0('Hi Oleksiy! Unfortunately, this functionality has not yet been implemented. By the way, the currently selected sidebar is ', sidebar_selected, '; tab is ', tab_selected, '.'))
+        fluidRow(
+          column(8,
+                 radioButtons('download_type', 'How much would you like to download?',
+                              choices = c('This tab',
+                                          'All info'))),
+          column(4,
+                 actionButton('download_confirm_2',
+                              'Download',
+                              icon = icon('download')))
+        )
       ),
       easyClose = TRUE,
       footer = NULL
     ))
   })
+  
+  observeEvent(input$download_confirm_2, {
+    showModal(modalDialog(
+      title = "Not quite ready...",
+      fluidPage(
+        fluidRow(h2('Under construction.'))
+      ),
+      easyClose = TRUE,
+      footer = NULL
+    ))
+  })
+  
+  
   
   # Get a reactive selected indicator, so as to carry through between
   # re-rendering of the drop-down menu
@@ -695,22 +716,32 @@ server <- function(input, output) {
                                label = avg)
         
         
-        cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(plot_data))
-        ggplot(data = plot_data,
-               aes(x = country,
-                   y = value)) +
-          geom_bar(stat = 'identity',
-                   fill = 'blue',
-                   alpha = 0.7
-                   # aes(fill = factor(ranking))
-                   ) +
+        cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(length(unique(plot_data$sub_region)))
+        
+        if(arrange_by == 'By region'){
+          g <- ggplot(data = plot_data,
+                      aes(x = country,
+                          y = value)) +
+            geom_bar(stat = 'identity',
+                     alpha = 0.9,
+                     aes(fill = factor(sub_region))) +
+            scale_fill_manual(name = '',
+                              values = cols) 
+        } else {
+          g <- ggplot(data = plot_data,
+                      aes(x = country,
+                          y = value)) +
+            geom_bar(stat = 'identity',
+                     fill = 'blue',
+                     alpha = 0.7)
+                     
+        }
+        
+        g +
           theme_landscape() +
           theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
           labs(x = '',
                y = '') +
-          scale_fill_manual(name = '',
-                            values = cols) +
-          theme(legend.position = 'none') +
           geom_hline(yintercept = avg,
                      lty = 2,
                      alpha = 0.8) +
@@ -879,7 +910,7 @@ server <- function(input, output) {
           
           make_small <- 
             function(x){
-              ((1 + percent_rank(x)) * 1.1)^3
+              ((1 + percent_rank(x)) * 1.4)^3
             }
           
           l <- l %>%
@@ -1111,6 +1142,7 @@ server <- function(input, output) {
       # Joined
       joined <- left_join(left, right,
                           by = 'key')
+      joined$value <- round(joined$value)
       
       DT::datatable(joined,
                     colnames = c('', ''),
@@ -1749,7 +1781,7 @@ server <- function(input, output) {
         filter(year <= as.numeric(format(Sys.Date(), '%Y'))) %>%
         filter(key %in% keys) %>%
         dplyr::select(key, value) %>%
-        distinct(key, value)
+        distinct(key, .keep_all = TRUE)
       out$value <- as.character(out$value)
       
       # Get 2020 data
@@ -1770,7 +1802,7 @@ server <- function(input, output) {
       # Get a left side
       left <- data_frame(key = keys)
       # Join together
-      joined <- left_join(left, right,
+      joined <- left_join(left, out,
                           by = 'key')
       # Join with 2020 stuff
       joined <- left_join(joined,
@@ -1778,7 +1810,7 @@ server <- function(input, output) {
                           by = 'key')
 
       DT::datatable(joined,
-                    colnames = c('', ''),
+                    colnames = c('', '', '2020'),
                     rownames = FALSE,
                     options=list(dom='t',
                                  ordering=F,
