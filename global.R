@@ -616,26 +616,7 @@ if('prepared_data.RData' %in% dir()){
   # (3) Same thing as in (1) - get iso2 and sub_region for qualy
   df_qualy <- inner_join(qualy, temp_africa, by = 'country')
   df_qualy <- df_qualy %>% arrange(desc(year))
-  
-  
-  # Get which indicators are not 100% NA for any given year by region
-  okay_indicators <- df %>%
-    filter(!is.na(value)) %>%
-    group_by(year, key, sub_region) %>%
-    summarise(ok = length(value) > 0) %>%
-    ungroup %>%
-    arrange(year) %>%
-    filter(ok)
-  
-  # Get which indicators are not 100% NA for any given year by country
-  okay_indicators_country <- df %>%
-    filter(!is.na(value)) %>%
-    group_by(year, key, country) %>%
-    summarise(ok = length(value) > 0) %>%
-    ungroup %>%
-    arrange(year) %>%
-    filter(ok)
-  
+
   # Correct country names
   df <- df %>%
     mutate(country = 
@@ -654,8 +635,6 @@ if('prepared_data.RData' %in% dir()){
        df_qualy, 
        df_regional,
        glossary,
-       okay_indicators,
-       okay_indicators_country,
        countries_by_region,
        wb_dev,
        file = 'prepared_data.RData')
@@ -753,3 +732,21 @@ df <- df %>% bind_rows(new_rows)
 df <- 
   df %>%
   arrange(desc(year), country, key)
+
+# Get which indicators are not 100% NA for any given year by region
+okay_indicators <- df %>%
+  filter(!is.na(value)) %>%
+  group_by(year, key, sub_region) %>%
+  summarise(ok = length(value) > 0) %>%
+  ungroup %>%
+  arrange(year) %>%
+  filter(ok)
+
+# Get which indicators are not 100% NA for any given year by country
+okay_indicators_country <- df %>%
+  filter(!is.na(value)) %>%
+  group_by(year, key, country) %>%
+  summarise(ok = length(value) > 0) %>%
+  ungroup %>%
+  arrange(year) %>%
+  filter(ok)

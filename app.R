@@ -49,17 +49,17 @@ body <- dashboardBody(
                tabName="dfs_market_overivew",
                fluidPage(
                  fluidRow(
-                   column(4,
+                   column(3,
                           selectInput('dfs_market_overview_region',
                                       'Region',
                                       choices = sub_regions,
                                       selected = sub_regions,
                                       multiple = TRUE)),
-                   column(4,
+                   column(3,
                           uiOutput('dfs_market_overview_indicator_ui')),
                    column(2,
                           selectizeInput('dfs_market_overview_year',
-                                      'Type a desired year',
+                                      'Year',
                                       choices = seq(min(df$year, na.rm = TRUE),
                                                     max(df$year, na.rm = TRUE)),
                                       selected = 2016)),#,
@@ -72,7 +72,9 @@ body <- dashboardBody(
                           radioButtons('dfs_market_overview_view',
                                        label = 'View type',
                                        choices = c('Map view',
-                                                   'Chart view')))
+                                                   'Chart view'))),
+                   column(2,
+                          uiOutput('map_ui'))
                  ),
                  fluidRow(
                    uiOutput('df_market_overview_ui')
@@ -588,7 +590,8 @@ server <- function(input, output) {
     } else {
       selectInput('dfs_market_overview_indicator',
                   title,
-                  choices = available_indicators)
+                  choices = available_indicators,
+                  selected = available_indicators[1])
     }
     
     
@@ -626,19 +629,30 @@ server <- function(input, output) {
     selected_key <- input$dfs_market_overview_indicator
     selected_year <- input$dfs_market_overview_year
     
+    message('selected_sub_regions is ', paste0(selected_sub_regions, collapse = ';'))
+    message('selected_key is ', selected_key)
+    message('selected_year is ', selected_year)
+    
     out <- df %>%
       filter(sub_region %in% selected_sub_regions,
              year == selected_year)
+    
+    message('out is ')
+    print(head(out))
+    
     if(is.null(selected_key)){
       selected_key <- out$key[1]
-      
+      message('new selected key ', selected_key)
     }
     out <- out %>%
+      filter(!is.na(value)) %>%
       filter(key == selected_key) %>%
       # Keep only one observation per country/key/year combination
       distinct(country, key, year, .keep_all = TRUE)
-    message('df filtered is: ')
-    print(head(out, 1))
+    
+    message('new out is ')
+    print(head(out))
+    
     return(out)
   })
   
@@ -776,6 +790,11 @@ server <- function(input, output) {
       map <- afr()
       coords <- coordinates(map)
       
+      # Get data
+      year <- input$dfs_market_overview_year
+      data <- df_filtered()
+      
+      
       l <- leaflet() %>%
         addProviderTiles('CartoDB.PositronNoLabels') %>%
         addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE)
@@ -787,70 +806,105 @@ server <- function(input, output) {
                     max(coords[,1], na.rm = TRUE),
                     max(coords[,2], na.rm = TRUE))
       }
-      return(l)
-    })
-  
-  observeEvent(
-    c(input$dfs_market_overview_indicator,
-      input$dfs_market_overview_year,
-      input$dfs$market_overview_region), {
-        year <- input$dfs_market_overview_year
-        print('YEAR IS ')
-        print(year)
-        data <- df_filtered()
-        map <- afr()
+
+      if(nrow(data) > 0 & nrow(map) > 0){
+        # Join data and map
+        map@data <- left_join(map@data,
+                              data %>%
+                                dplyr::select(iso2,
+                                              key,
+                                              value) %>%
+                                distinct(iso2,
+                                         key, .keep_all = TRUE))
+
+        # Prepare colors
+        vals <- map@data$value
+        if(all(is.na(vals))){
+          vals <- 1
+        }
+        pal <- colorNumeric(
+          palette = "YlOrRd",
+          domain = vals)
         
-        if(nrow(data) > 0 & nrow(map) > 0){
-          # Join data and map
-          map@data <- left_join(map@data,
-                                data %>%
-                                  dplyr::select(iso2,
-                                                key,
-                                                value) %>%
-                                  distinct(iso2,
-                                           key, .keep_all = TRUE))
-          
-          # Prepare colors
-          vals <- map@data$value
-          if(all(is.na(vals))){
-            vals <- 1
+        # Popups
+        avg_val <- mean(map@data$value, na.rm = TRUE)
+        pops <- map@data %>%
+          mutate(average_value = avg_val) %>%
+          mutate(link = 'Click here') %>%
+          dplyr::select(country,
+                        sub_region,
+                        key,
+                        value,
+                        average_value,
+                        link) %>%
+          mutate(value = round(value, digits = 2),
+                 average_value = round(average_value, digits = 2))
+        names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
+        popups <- lapply(rownames(pops), function(row){
+          x <- pops[row.names(pops) == row,]
+          captions <- x$Key
+          x$Key <- NULL
+          x <- gather(x,a,b,Country:Link) %>%
+            mutate(a = paste0(a, '   ')) %>%
+            mutate(b = paste0('    ', b))
+          names(x) <- c(' ', '  ')
+          knitr::kable(x, 
+                       rnames = FALSE,
+                       caption = captions,
+                       align = 'lr',
+                       # align = paste(rep("l", ncol(x)), collapse = ''),
+                       format = 'html')
+        })
+        
+        # Circle or not
+        circles <- FALSE
+        if(!is.null(input$circles)){
+          if(input$circles == 'Circles'){
+            circles <- TRUE
           }
-          pal <- colorNumeric(
-            palette = "YlOrRd",
-            domain = vals)
+        }
+        
+        message('circles is ', circles)
+        
+        if(circles){
           
-          # Popups
-          avg_val <- mean(map@data$value, na.rm = TRUE)
-          pops <- map@data %>%
-            mutate(average_value = avg_val) %>%
-            mutate(link = 'Click here') %>%
-            dplyr::select(country,
-                          sub_region,
-                          key,
-                          value,
-                          average_value,
-                          link) %>%
-            mutate(value = round(value, digits = 2),
-                   average_value = round(average_value, digits = 2))
-          names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
-          popups <- lapply(rownames(pops), function(row){
-            x <- pops[row.names(pops) == row,]
-            captions <- x$Key
-            x$Key <- NULL
-            x <- gather(x,a,b,Country:Link) %>%
-              mutate(a = paste0(a, '   ')) %>%
-              mutate(b = paste0('    ', b))
-            names(x) <- c(' ', '  ')
-            knitr::kable(x, 
-                         rnames = FALSE,
-                         caption = captions,
-                         align = 'lr',
-                         # align = paste(rep("l", ncol(x)), collapse = ''),
-                         format = 'html')
-          })
+          aff <- map@data
+          coords <- coordinates(map)
+          aff$lng <- coords[,1]
+          aff$lat <- coords[,2]
           
-          # adf <- africa_df()
-          l <- leafletProxy('dfs_market_overview_leaf') %>% 
+          aff <- aff %>%
+            arrange(desc(Shape_STAr)) %>%
+            dplyr::distinct(country, .keep_all = TRUE)
+          
+          make_small <- 
+            function(x){
+              ((1 + percent_rank(x)) * 1.1)^3
+            }
+          
+          l <- l %>%
+            clearControls() %>%
+            clearPopups() %>%
+            clearShapes() %>%
+            addCircleMarkers(data = aff,
+                             lng = aff$lng,
+                             lat = aff$lat,
+                             color = 'black',
+                             weight = 1,
+                             fillColor = ~pal(value),
+                             radius = make_small(aff$value),
+                             popup = popups) %>%
+            addPolylines(data = map,
+                         color = 'black',
+                         weight = 1,
+                         opacity = 1)
+          l <- l %>%
+            addLegend(pal = pal, values = map@data$value, opacity = 0.7,
+                      position = "bottomright",
+                      # title = title, # too wide!
+                      title = NULL)
+        } else {
+          l <- l %>% 
             clearControls() %>%
             clearPopups() %>%
             clearShapes() %>%
@@ -862,34 +916,142 @@ server <- function(input, output) {
                         color = ~pal(value),
                         popup = popups,
                         label = map@data$country) %>%
-            # addPolylines(data = map,
-            #              color = 'black',
-            #              weight = 1,
-                         # opacity = 1) %>%
             addPolylines(data = map,
                          color = 'black',
                          weight = 1,
-            opacity = 1)# %>%
-            # addLabelOnlyMarkers(layerId = 'country_names',
-                                # data = adf,
-                                # lng = adf$x,
-                                # lat = adf$y,
-                                # label = adf$country,
-                                # labelOptions = labelOptions(noHide = TRUE,
-                                #                             textsize = '5px',
-                                #                             textOnly = TRUE,
-                                #                             # direction = 'middle',
-                                #                             offset = c(-10,0),
-                                #                             opacity = 0.8))
+                         opacity = 1)# %>%
           l <- l %>%
             addLegend(pal = pal, values = map@data$value, opacity = 0.7,
                       position = "bottomright",
                       # title = title, # too wide!
                       title = NULL)
-          return(l)
-          
         }
-      })
+      }
+      
+      
+      return(l)
+    })
+  
+  # observeEvent(
+  #   c(input$dfs_market_overview_indicator,
+  #     input$dfs_market_overview_year,
+  #     input$dfs$market_overview_region), {
+  #       year <- input$dfs_market_overview_year
+  #       data <- df_filtered()
+  #       map <- afr()
+  #       
+  #       if(nrow(data) > 0 & nrow(map) > 0){
+  #         # Join data and map
+  #         map@data <- left_join(map@data,
+  #                               data %>%
+  #                                 dplyr::select(iso2,
+  #                                               key,
+  #                                               value) %>%
+  #                                 distinct(iso2,
+  #                                          key, .keep_all = TRUE))
+  #         
+  #         # Prepare colors
+  #         vals <- map@data$value
+  #         if(all(is.na(vals))){
+  #           vals <- 1
+  #         }
+  #         pal <- colorNumeric(
+  #           palette = "YlOrRd",
+  #           domain = vals)
+  #         
+  #         # Popups
+  #         avg_val <- mean(map@data$value, na.rm = TRUE)
+  #         pops <- map@data %>%
+  #           mutate(average_value = avg_val) %>%
+  #           mutate(link = 'Click here') %>%
+  #           dplyr::select(country,
+  #                         sub_region,
+  #                         key,
+  #                         value,
+  #                         average_value,
+  #                         link) %>%
+  #           mutate(value = round(value, digits = 2),
+  #                  average_value = round(average_value, digits = 2))
+  #         names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
+  #         popups <- lapply(rownames(pops), function(row){
+  #           x <- pops[row.names(pops) == row,]
+  #           captions <- x$Key
+  #           x$Key <- NULL
+  #           x <- gather(x,a,b,Country:Link) %>%
+  #             mutate(a = paste0(a, '   ')) %>%
+  #             mutate(b = paste0('    ', b))
+  #           names(x) <- c(' ', '  ')
+  #           knitr::kable(x, 
+  #                        rnames = FALSE,
+  #                        caption = captions,
+  #                        align = 'lr',
+  #                        # align = paste(rep("l", ncol(x)), collapse = ''),
+  #                        format = 'html')
+  #         })
+  #         
+  #         # Circle or not
+  #         circles <- FALSE
+  #         if(!is.null(input$circles)){
+  #           if(input$circles == 'Circles'){
+  #             circles <- TRUE
+  #           }
+  #         }
+  #         
+  #         message('circles is ', circles)
+  #         
+  #         if(circles){
+  #           
+  #           aff <- map@data
+  #           coords <- coordinates(map)
+  #           aff$lng <- coords[,1]
+  #           aff$lat <- coords[,2]
+  #           
+  #           l <- leafletProxy('dfs_market_overview_leaf') %>% 
+  #             clearControls() %>%
+  #             clearPopups() %>%
+  #             clearShapes() %>%
+  #             addCircleMarkers(data = aff,
+  #                              lng = aff$lng,
+  #                              lat = aff$lat,
+  #                              radius = aff$value,
+  #                              popup = popups) %>%
+  #             addPolylines(data = map,
+  #                          color = 'black',
+  #                          weight = 1,
+  #                          opacity = 1)# %>%
+  #           # l <- l %>%
+  #           #   addLegend(pal = pal, values = map@data$value, opacity = 0.7,
+  #           #             position = "bottomright",
+  #           #             # title = title, # too wide!
+  #           #             title = NULL)
+  #           return(l)
+  #         } else {
+  #           l <- leafletProxy('dfs_market_overview_leaf') %>% 
+  #             clearControls() %>%
+  #             clearPopups() %>%
+  #             clearShapes() %>%
+  #             addPolygons(data = map,
+  #                         stroke = TRUE,
+  #                         weight = 1,
+  #                         smoothFactor = 0.2, 
+  #                         fillOpacity = 0.7,
+  #                         color = ~pal(value),
+  #                         popup = popups,
+  #                         label = map@data$country) %>%
+  #             addPolylines(data = map,
+  #                          color = 'black',
+  #                          weight = 1,
+  #                          opacity = 1)# %>%
+  #           l <- l %>%
+  #             addLegend(pal = pal, values = map@data$value, opacity = 0.7,
+  #                       position = "bottomright",
+  #                       # title = title, # too wide!
+  #                       title = NULL)
+  #           return(l)
+  #         }
+  #       }
+  #       
+  #     })
   
   # Observe zoom and change
   observeEvent(input$dfs_market_overview_leaf_zoom, {
@@ -1769,6 +1931,19 @@ server <- function(input, output) {
       scale_fill_manual(name = '',
                         values = c('darkorange', 'blue', 'grey')) 
   })
+  
+  output$map_ui <-
+    renderUI({
+      ok <- input$dfs_market_overview_view == 'Map view'
+      if(ok){
+        radioButtons('circles',
+                     'Map type',
+                     choices = c('Choropleth',
+                                 'Circles'))
+      } else {
+        NULL
+      }
+    })
 }
 
 shinyApp(ui, server)
