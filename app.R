@@ -896,7 +896,7 @@ server <- function(input, output) {
     adf <- africa_df()
     zoom_level <- input$dfs_market_overview_leaf_zoom
     message('Zoom level is ', zoom_level)
-    text_size <- paste0((round(zoom_level * 1.5)^1.3), 'px')
+    text_size <- paste0((round((zoom_level * 1.5)^1.3)), 'px')
     leafletProxy('dfs_market_overview_leaf') %>%
       # removeMarker(layerId = 'country_names') %>%
       # clearGroup(layerId = 'country_names') %>%
