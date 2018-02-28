@@ -399,7 +399,7 @@ body <- dashboardBody(
                                                        'Year',
                                                        min = min(df$year),
                                                        max = max(df$year),
-                                                       value = c(min(df$year), max(df$year)))),
+                                                       value = c(2000, 2016))),
                                     column(2,
                                            selectInput('x_market_chart_type',
                                                        'Chart type',
