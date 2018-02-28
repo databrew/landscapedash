@@ -337,7 +337,10 @@ body <- dashboardBody(
                                        align = 'center',
                                        selectInput('c',
                                                    'Benchmark',
-                                                   choices = letters))
+                                                   choices = c('This',
+                                                               'Is',
+                                                               'Under',
+                                                               'Construction')))
                               ),
                                 br(),
                                 shinydashboard::box(
@@ -356,12 +359,6 @@ body <- dashboardBody(
              tabItem(
                tabName="x_market_analysis",
                fluidPage(
-                 fluidRow(
-                   selectInput('x_market_analysis_region',
-                               'Region',
-                               choices = sub_regions,
-                               selected = sub_regions,
-                               multiple = TRUE)),
                  fluidRow(
                    tabsetPanel(
                      id = 'tab_x_market_analysis',
@@ -388,8 +385,35 @@ body <- dashboardBody(
                                 width = 12,
                                 collapsible = TRUE,
                                 collapsed = FALSE,
-                                h3('Waiting on input from client',
-                                   align = 'center')
+                                fluidPage(
+                                  fluidRow(
+                                    column(3,
+                                           selectInput('x_market_country',
+                                                       'Countries',
+                                                       choices = sort(unique(df$country)),
+                                                       multiple = TRUE)),
+                                    column(3,
+                                           uiOutput('x_market_indicator_ui')),
+                                    column(2,
+                                           sliderInput('x_market_year',
+                                                       'Year',
+                                                       min = min(df$year),
+                                                       max = max(df$year),
+                                                       value = c(min(df$year), max(df$year)))),
+                                    column(2,
+                                           selectInput('x_market_chart_type',
+                                                       'Chart type',
+                                                       choices = c('Bars',
+                                                                   'Lines'))),
+                                    column(2,
+                                           checkboxInput('x_market_show_line',
+                                                         'Show average (not yet implemented)',
+                                                         value = TRUE))
+                                  ),
+                                  fluidRow(
+                                    plotOutput('x_market_plot')
+                                  )
+                                )
                               ))
                    )
                  ) 
@@ -614,9 +638,32 @@ server <- function(input, output) {
                   choices = available_indicators,
                   selected = available_indicators[1])
     }
-    
-    
   })
+  
+  # Indicator selection ui
+  output$x_market_indicator_ui <- renderUI({
+    selected_year <- input$x_market_year
+    if(is.null(selected_year)){
+      selected_year <- as.numeric(format(Sys.Date(), '%Y'))
+    }
+    
+    # Only allow those indicators which have some values for the year in question
+    sr <- input$x_market_country
+    available_indicators <- okay_indicators_country %>% 
+      filter(year >= selected_year[1],
+             year <= selected_year[2]) %>%
+      filter(country %in% sr) %>%
+      .$key %>% unlist
+    available_indicators <- sort(unique(available_indicators))
+    
+    selectInput('x_market_indicator',
+                  'Indicator',
+                  choices = available_indicators,
+                  selected = available_indicators[1],
+                multiple = TRUE)
+  })
+  
+  
   
   # Reactive shapefile for map
   afr <- reactive({
@@ -1705,8 +1752,8 @@ server <- function(input, output) {
             wide <- plot_data %>%
               spread(key = key, value = value)
             
-            labs <- names(wide)[5:6]
-            names(wide)[5:6] <- c('x', 'y')
+            labs <- names(wide)[6:7]
+            names(wide)[6:7] <- c('x', 'y')
             ggplot(data = wide,
                    aes(x = x,
                        y = y)) +
@@ -1976,6 +2023,71 @@ server <- function(input, output) {
         NULL
       }
     })
+  
+  output$x_market_plot <- renderPlot({
+    
+    the_countries <- input$x_market_country
+    the_years <- input$x_market_year
+    
+    plot_data <- 
+      df %>%
+      filter(country %in% the_countries,
+             year >= the_years[1],
+             year <= the_years[2])
+    
+    go <- TRUE
+    if(nrow(plot_data) == 0){
+      go <- FALSE
+    }
+    the_indicators <- input$x_market_indicator
+    if(is.null(the_indicators)){
+      if(go){
+        the_indicators <- plot_data$key[1]
+      }
+    }
+    
+    if(!go){
+      return(ggplot() + theme_landscape())
+    } 
+    # Subset further
+    plot_data <- 
+      plot_data %>%
+      filter(key %in% the_indicators)
+    
+    cols <- colorRampPalette(brewer.pal(n = 8, 
+                                        name = 'Spectral'))(length(unique(plot_data$country)))
+    # Plot
+    chart_type <- input$x_market_chart_type
+    if(chart_type == 'Bars'){
+      ggplot(data = plot_data,
+             aes(x = year,
+                 fill = country,
+                 y = value)) +
+        geom_bar(stat = 'identity',
+                 position = 'dodge') +
+        theme_landscape() +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        labs(x = '',
+             y = '') +
+        facet_wrap(~key)
+    } else if(chart_type == 'Lines'){
+      ggplot(data = plot_data,
+             aes(x = year,
+                 color = country,
+                 y = value)) +
+        geom_point() +
+        geom_line() +
+        theme_landscape() +
+        scale_color_manual(name = '',
+                          values = cols) +
+        labs(x = '',
+             y = '') +
+        facet_wrap(~key)
+    }
+    
+    
+  })
 }
 
 shinyApp(ui, server)
