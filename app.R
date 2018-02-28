@@ -4,7 +4,13 @@ library(leaflet.extras)
 source('functions.R')
 source('global.R')
 
-header <- dashboardHeader(title="DFS Landscape Dashboard")
+header <- dashboardHeader(title="DFS Landscape Dashboard",
+                            tags$li(class = 'dropdown', 
+                                    actionButton('download',
+                                                 'Download',
+                                                 icon = icon('download', 'fa-1'))))
+
+
 sidebar <- dashboardSidebar(
   sidebarMenu(
     id = 'sidebar',
@@ -31,10 +37,7 @@ sidebar <- dashboardSidebar(
     menuItem(
       text = 'About',
       tabName = 'about',
-      icon = icon('cog', lib = 'glyphicon')),
-    actionButton('download',
-                 'Download',
-                 icon = icon('download', 'fa-1'))
+      icon = icon('cog', lib = 'glyphicon'))
   )
 )
 
@@ -283,7 +286,7 @@ body <- dashboardBody(
                                     width = 12,
                                     collapsible = TRUE,
                                     collapsed = FALSE,
-                                    h3('Waiting on input from client',
+                                    h3('Waiting on input.',
                                        align = 'center')
                                   )
                                 )
@@ -309,7 +312,7 @@ body <- dashboardBody(
                                 width = 12,
                                 collapsible = TRUE,
                                 collapsed = FALSE,
-                                h3('Waiting on input from client',
+                                h3('Waiting on input.',
                                    align = 'center')
                               )),
                      tabPanel('Custom analyses',
@@ -372,7 +375,7 @@ body <- dashboardBody(
                                 width = 12,
                                 collapsible = TRUE,
                                 collapsed = FALSE,
-                                h3('Waiting on input from client.',
+                                h3('Waiting on input.',
                                    align = 'center')
                               )),
                      tabPanel('Custom analyses',
