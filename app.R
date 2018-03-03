@@ -1426,7 +1426,7 @@ server <- function(input, output) {
       a_country <- country()
       sub_dat <- all_country()
       keys <- c('Regulatory environment',
-                'Unique mobile penetration',
+                'Unique mobile phone penetration',
                 'Smartphone penetration',
                 '% of adults with FI account(1)',
                 'Tech Hubs')
