@@ -80,9 +80,8 @@ body <- dashboardBody(
                    column(2,
                           uiOutput('map_ui'))
                  ),
-                 fluidRow(
-                   column(4,uiOutput('df_market_overview_ui')),
-                   column(8, h4(textOutput('region_text')))
+                 fluidRow(h4(textOutput('region_text'))),
+                 fluidRow(uiOutput('df_market_overview_ui')
                  )
                )
              ),
@@ -1095,6 +1094,7 @@ server <- function(input, output) {
         dplyr::filter(key %in% columns) %>%
         dplyr::distinct(key, value, .keep_all = TRUE) %>%
         dplyr::filter(!duplicated(key)) %>%
+        mutate(value = round(value)) %>%
         mutate(value = ifelse(!is.na(unit), 
                               paste0(value, ' ', unit),
                               value)) %>%
@@ -1102,7 +1102,6 @@ server <- function(input, output) {
       # Joined
       joined <- left_join(left, right,
                           by = 'key')
-      joined$value <- round(joined$value)
       names(joined) <- NULL#c(' ', '  ')
       joined %>%
         kable('html') %>%
@@ -1493,6 +1492,7 @@ server <- function(input, output) {
       # Get country-specific values
       right <- sub_dat %>% 
         dplyr::filter(key %in% columns) %>%
+        mutate(value = round(value, digits = 1)) %>%
         dplyr::distinct(key, value, .keep_all = TRUE) %>%
         mutate(value = ifelse(!is.na(unit), 
                               paste0(value, ' ', unit),
@@ -1504,7 +1504,12 @@ server <- function(input, output) {
         sub_dat %>%
         filter(year == 2020) %>%
         filter(key == 'Real GDP Growth Annual Percent Change') %>%
-        dplyr::select(key, value)
+        mutate(value = round(value, digits = 1)) %>%
+        mutate(value = ifelse(!is.na(unit), 
+                              paste0(value, ' ', unit),
+                              value)) %>%
+        dplyr::select(key, value) %>%
+        mutate(value = as.character(value))
       if(nrow(growth) >= 1){
         growth <- growth %>%
           mutate(key = 'GDP growth forecast (20)')
@@ -1515,7 +1520,6 @@ server <- function(input, output) {
       # Joined
       joined <- left_join(left, right,
                           by = 'key')
-      joined$value <- round(joined$value, digits = 1)
       names(joined) <- NULL# c(' ', '  ')
       joined %>%
         kable('html') %>%

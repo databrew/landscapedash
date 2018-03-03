@@ -783,3 +783,4 @@ df <-
             by = c('key' = 'Indicator Name'))
 df <- df %>%
   dplyr::rename(unit = Unit)
+df$unit <- ifelse(df$unit == 'Number', NA, df$unit)
