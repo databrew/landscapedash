@@ -1655,8 +1655,7 @@ server <- function(input, output) {
       this_country <- country()
       x <- df_qualy %>%
         filter(country == this_country) %>%
-        dplyr::select(key, value) %>% 
-        dplyr::filter(!is.na(value))    
+        dplyr::select(key, value)   
       DT::datatable(x, rownames = NULL)
       })
   

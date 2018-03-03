@@ -9,19 +9,19 @@ library(Hmisc)
 library(htmlTable)
 library(leaflet)
 library(RColorBrewer)
-# library(rgeos)
-library(sf)
+library(rgeos)
+# library(sf)
 
 if('prepared_data.RData' %in% dir()){
   load('prepared_data.RData')
 } else {
   
   # Load a shapefile of Africa
-  # africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
-  africa <- st_read('spatial_data/africa_shp/', 'AfricanCountries')
+  africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
+  # africa <- st_read('spatial_data/africa_shp/', 'AfricanCountries')
   # Simplify  
-  africa_polys <- st_simplify(africa, preserveTopology = TRUE, dTolerance = 0.1)
-  africa <- as(st_zm(africa_polys), "Spatial")
+  # africa_polys <- st_simplify(africa, preserveTopology = TRUE, dTolerance = 0.1)
+  # africa <- as(st_zm(africa_polys), "Spatial")
   
   # Get countries by region
   countries_by_region <- read_csv('spatial_data/countries_by_region.csv')
@@ -79,20 +79,32 @@ if('prepared_data.RData' %in% dir()){
   # Remove garbage variable
   qualy$X__2 <- NULL
   
+  # Save the column names
+  q_names <- names(qualy)[2:ncol(qualy)]
+  
   # melt data into long format 
   qualy <- gather(qualy, key, value, -country)
   
-  # add a year variable with all NAs 
-  qualy$year <- NA
-  
-  # recode the two congos
-  qualy$country <- gsub('Congo, Democratic Republic of', 'Congo (Democratic Republic of the)', qualy$country)
+  qualy$country <- gsub('Cabo Verde', 'Cape Verde', qualy$country)
+  qualy$country <- gsub('Congo, Democratic Republic of', 'Congo DRC', qualy$country)
   qualy$country <- gsub('Congo, Republic of', 'Congo', qualy$country)
   qualy$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", qualy$country)
-  qualy$country <- gsub("Gambia, The", "Gambia", qualy$country)
-  qualy$country <- gsub("Tanzania", "Tanzania, United Republic of", qualy$country)
+  qualy$country <- gsub('Gambia, The', 'Gambia', qualy$country)
+
+  # qualy$country <- gsub('Congo, Democratic Republic of', 'Congo (Democratic Republic of the)', qualy$country)
+  # qualy$country <- gsub('Congo, Republic of', 'Congo', qualy$country)
+  # qualy$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", qualy$country)
+  # qualy$country <- gsub("Gambia, The", "Gambia", qualy$country)
+  # qualy$country <- gsub("Tanzania", "Tanzania, United Republic of", qualy$country)
   
-  # larger Democratic Republic of the Congo to the southeast (capital: Kinshasa), formerly known as Zaire and sometimes referred to as Congo-Kinshasa
+  # Left join to an empty dataset to ensure that there is something for 
+  # every country-indicator pair
+  # Remove those without matches (not SSA)
+  qualy <- qualy %>%
+    filter(country %in% africa@data$COUNTRY)
+  left <- expand.grid(country = sort(unique(africa@data$COUNTRY)),
+                      key = q_names)
+  qualy <- left_join(left, qualy)
   ##########
   # read in and clean IMF FAS 2017 data
   ##########
@@ -597,11 +609,24 @@ if('prepared_data.RData' %in% dir()){
   # get data from africa@data
   ##########
   # get iso2 and sub_region from africa
+  africa@data$country <- africa@data$COUNTRY
   temp_africa <- africa@data[, c('country','iso2', "sub_region")]
   temp_africa <- temp_africa %>% group_by(iso2, sub_region) %>% distinct()
   
   # (1) get iso2 and sub_region for country in df - use inner_join to drop extra countries
   # in df
+  # Correct country names
+  df <- df %>%
+    mutate(country = 
+             ifelse(country == 'Cabo Verde',
+                    'Cape Verde',
+                    ifelse(country == 'Congo (Democratic Republic of the)',
+                           'Congo DRC',
+                           ifelse(grepl('saint helen', tolower(country)),
+                                  'Saint Helena',
+                                  ifelse(grepl('tanzania', tolower(country)),
+                                         'Tanzania',
+                                         country)))))
   df <- inner_join(df, temp_africa, by = 'country')
   
   # Arrange descending from most modern to least
@@ -614,21 +639,7 @@ if('prepared_data.RData' %in% dir()){
   df_regional <- df_regional %>% arrange(desc(year))
   
   # (3) Same thing as in (1) - get iso2 and sub_region for qualy
-  df_qualy <- inner_join(qualy, temp_africa, by = 'country')
-  df_qualy <- df_qualy %>% arrange(desc(year))
-
-  # Correct country names
-  df <- df %>%
-    mutate(country = 
-             ifelse(country == 'Cabo Verde',
-                    'Cape Verde',
-                    ifelse(country == 'Congo (Democratic Republic of the)',
-                           'Congo DRC',
-                           ifelse(grepl('saint helen', tolower(country)),
-                                        'Saint Helena',
-                                  ifelse(grepl('tanzania', tolower(country)),
-                                         'Tanzania',
-                                         country)))))
+  df_qualy <- left_join(qualy, temp_africa, by = 'country')
 
   save(africa,
        df,
