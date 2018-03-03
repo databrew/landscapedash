@@ -678,7 +678,7 @@ df$year <- as.numeric(as.character(df$year))
 df <- df %>% filter(!is.na(value))
 
 # For those with no year, assume 2017
-df$year[is.na(df$year)] <- 2017
+df$year[is.na(df$year)] <- 2015
 
 # No repeats
 df <- df %>%
@@ -784,3 +784,8 @@ df <-
 df <- df %>%
   dplyr::rename(unit = Unit)
 df$unit <- ifelse(df$unit == 'Number', NA, df$unit)
+
+
+# # Remove all those indicators not in column b of glossary
+# df <- df %>%
+#   filter(key %in% glossary$`Indicator Name`)

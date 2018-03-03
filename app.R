@@ -66,7 +66,7 @@ body <- dashboardBody(
                                       'Year',
                                       choices = seq(min(df$year, na.rm = TRUE),
                                                     max(df$year, na.rm = TRUE)),
-                                      selected = 2016)),#,
+                                      selected = 2015)),#,
                                       # min = min(df$year, na.rm = TRUE),
                                       # max = max(df$year, na.rm = TRUE),
                                       # value = 2016,
@@ -80,7 +80,6 @@ body <- dashboardBody(
                    column(2,
                           uiOutput('map_ui'))
                  ),
-                 fluidRow(h4(textOutput('region_text'))),
                  fluidRow(uiOutput('df_market_overview_ui')
                  )
                )
@@ -94,6 +93,7 @@ body <- dashboardBody(
                    tabsetPanel(
                      id = 'tab_country_dashboard',
                      tabPanel('Market overview',
+                              fluidRow(h4(textOutput('region_text'))),
                               fluidRow(column(4,
                                               h4('Digital Financial Services Market'),
                                               tableOutput('digital_financial_services_market_table'),
@@ -535,7 +535,7 @@ server <- function(input, output) {
       }
     }
     
-    title <- 'Indicator'
+    title <- 'Select an indicator'
     if(use_si){
       selectInput('dfs_market_overview_indicator',
                   title,
@@ -566,7 +566,7 @@ server <- function(input, output) {
     available_indicators <- sort(unique(available_indicators))
     
     selectInput('x_market_indicator',
-                  'Indicator',
+                  'Select indicator(s)',
                   choices = available_indicators,
                   selected = available_indicators[1],
                 multiple = TRUE)
@@ -635,6 +635,10 @@ server <- function(input, output) {
   
   output$dfs_market_overview_plot <-
     renderPlot({
+      add_label <- TRUE
+      if(!is.null(input$add_labels)){
+        add_label <- input$add_labels
+      }
       plot_data <- df_filtered()
       plot_data <- plot_data %>%
         filter(!is.na(value)) %>%
@@ -682,15 +686,19 @@ server <- function(input, output) {
                      alpha = 0.9,
                      aes(fill = factor(sub_region))) +
             scale_fill_manual(name = '',
-                              values = cols) 
+                              values = cols)  
         } else {
           g <- ggplot(data = plot_data,
                       aes(x = country,
                           y = value)) +
             geom_bar(stat = 'identity',
                      fill = 'blue',
-                     alpha = 0.7)
+                     alpha = 0.7) 
                      
+        }
+        if(add_label){
+          g <- g +
+            geom_label(aes(label = round(value, 1)))
         }
         
         g +
@@ -815,17 +823,23 @@ server <- function(input, output) {
         
         # Popups
         avg_val <- mean(map@data$value, na.rm = TRUE)
+        maximum_val <- max(map@data$value, na.rm = TRUE)
         pops <- map@data %>%
-          mutate(average_value = avg_val) %>%
-          mutate(link = 'Click here') %>%
+          mutate(average_value = avg_val,
+                 max_value = maximum_val) %>%
+          mutate(link = 'Click here (placeholder)') %>%
           dplyr::select(country,
                         sub_region,
                         key,
                         value,
                         average_value,
+                        max_value,
                         link) %>%
           mutate(value = round(value, digits = 2),
-                 average_value = round(average_value, digits = 2))
+                 average_value = round(average_value, digits = 2),
+                 max_value = round(max_value, digits = 2)) %>%
+          dplyr::rename(regional_average = average_value,
+                        regional_maximum = max_value) 
         names(pops) <- Hmisc::capitalize(gsub('_', ' ', names(pops)))
         popups <- lapply(rownames(pops), function(row){
           x <- pops[row.names(pops) == row,]
@@ -866,7 +880,7 @@ server <- function(input, output) {
           
           make_small <- 
             function(x){
-              ((1 + percent_rank(x)) * 1.4)^3
+              ((1 + percent_rank(x)) * 1.2)^2.2
             }
           
           l <- l %>%
@@ -1634,7 +1648,8 @@ server <- function(input, output) {
                      choices = c('Choropleth',
                                  'Circles'))
       } else {
-        NULL
+        checkboxInput('add_labels',
+                     'Add values to bars')
       }
     })
   
