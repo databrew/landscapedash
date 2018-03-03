@@ -38,7 +38,8 @@ theme_landscape <- function (base_size = 15, y_comma = TRUE, white_bg = FALSE, o
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                0.2, 0.3, 0.35), "cm")) + theme(complete = TRUE) + theme(legend.key = element_blank()) + 
     theme(strip.background = element_blank()) +
     theme(plot.background = element_rect(fill = '#ecf0f5', colour = '#ecf0f5')) +
-    theme(panel.background = element_rect(fill = '#ecf0f5', colour = '#ecf0f5'))
+    theme(panel.background = element_rect(fill = '#ecf0f5', colour = '#ecf0f5')) +
+    theme(panel.grid.major = element_blank())
   if (y_comma) {
     out <- list(out, scale_y_continuous(label = scales::comma))
   }

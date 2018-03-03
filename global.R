@@ -10,6 +10,8 @@ library(htmlTable)
 library(leaflet)
 library(RColorBrewer)
 library(rgeos)
+library(knitr)
+library(kableExtra)
 # library(sf)
 
 if('prepared_data.RData' %in% dir()){
@@ -761,3 +763,23 @@ okay_indicators_country <- df %>%
   ungroup %>%
   arrange(year) %>%
   filter(ok)
+
+# Indicate which indicators in qualy are "Regulation and Technology" vs.
+# "Competitive Dynamics"
+df_qualy <- df_qualy %>%
+  mutate(sub_key = 
+           ifelse(key %in% c('Agent banking regulations',
+                             'Regulatory Environment',
+                             'KYC Implementation',
+                             'Interoperability'),
+                  'Regulation and technology',
+                  'Competitive dynamics'))
+
+# Join units to df
+df <-
+  left_join(x = df,
+            y = glossary %>%
+              dplyr::select(`Indicator Name`, Unit),
+            by = c('key' = 'Indicator Name'))
+df <- df %>%
+  dplyr::rename(unit = Unit)

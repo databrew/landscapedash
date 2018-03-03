@@ -46,6 +46,7 @@ body <- dashboardBody(
     tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
   ),
   fluidPage(
+
     column(12,
            tabItems(
              tabItem(
@@ -80,28 +81,43 @@ body <- dashboardBody(
                           uiOutput('map_ui'))
                  ),
                  fluidRow(
-                   uiOutput('df_market_overview_ui')
+                   column(4,uiOutput('df_market_overview_ui')),
+                   column(8, h4(textOutput('region_text')))
                  )
                )
              ),
              tabItem(
                tabName="country_dashboard",
                fluidPage(
+                 
                  fluidRow(uiOutput('country_dashboard_country_ui')),
                  fluidRow(
                    tabsetPanel(
                      id = 'tab_country_dashboard',
                      tabPanel('Market overview',
-                              br(),
-                              fluidRow(
-                                column(3,
-                                       h3(textOutput('country_text'))),
-                                column(9,
-                                       h3(textOutput('region_text')))
+                              fluidRow(column(4,
+                                              h4('Digital Financial Services Market'),
+                                              tableOutput('digital_financial_services_market_table'),
+                                              
+                                              h4('Financial access points'),
+                                              tableOutput('financial_access_points_table'),
+                                              
+                                              h4('Drivers of DFS growth'),
+                                              tableOutput('drivers_of_dfs_growth_table'),
+                                              
+                                              h4('Macro drivers of growth'),
+                                              tableOutput('macro_drivers_of_growth_table')
                               ),
+                              column(8,
+                                     plotOutput('level_of_dfs_market_development'),
+                                     plotOutput('level_of_dfs_market_development2'))),
+                              fluidRow(helpText('Sources: IMF, FAS, GSMA, AFSD, FINDEX, EIU, WBG, GPSS, and Development Index, Central Banks, Central Communication Authorities.'),
+                                       helpText('Data as of EOY 2016 unless otherwise indicated.'),
+                                       helpText('(1) 2014 data, (2) 2016 data, (3) people without account at a FI or MM account.'),
+                                       helpText('Cards include debit and credit cards but exclude ATM cards')),
                               fluidRow(
                                 shinydashboard::box(
-                                  title = 'Level of DFS market development',
+                                  title = 'Competitive landscape',
                                   footer = '',
                                   status = 'warning',
                                   solidHeader = TRUE,
@@ -110,161 +126,52 @@ body <- dashboardBody(
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   fluidPage(
-                                    column(6,
-                                           plotOutput('level_of_dfs_market_development')),
-                                    column(6,
-                                           plotOutput('level_of_dfs_market_development2'))
+                                    fluidRow(column(6,
+                                                    plotOutput('e_money_operators')),
+                                             column(6,
+                                                    plotOutput('mnos'))),
+                                    helpText('Notes: market share for e-payment operators based on Jul-Sep 17 MM transaction value, banks\' Dec 16 assets and MNOs\'s Dec 16 subscribers.'),
+                                    helpText('Source: Central Bank and Central Communications Authority')
                                   )
                                 )
                               ),
-                              
                               fluidRow(
                                 shinydashboard::box(
-                                  title = 'Digital Financial Services Market',
+                                  title = 'Financial access points per 100,000 adult population',
                                   footer = '',
-                                  status = 'primary',
+                                  status = 'warning',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 6,
+                                  width = 12,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   fluidPage(
-                                    DT::dataTableOutput('digital_financial_services_market_table')
-                                  )
-                                ),
-                                shinydashboard::box(
-                                  title = 'Financial access points',
-                                  footer = '',
-                                  status = 'primary',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  fluidPage(
-                                    DT::dataTableOutput('financial_access_points_table')
+                                    plotOutput('financial_access_points_per_100000'),
+                                    helpText('Source: FAS')
                                   )
                                 )
                               ),
-                              
-                              
                               fluidRow(
-                                shinydashboard::box(
-                                  title = 'Drivers of DFS growth',
-                                  footer = '',
-                                  status = 'primary',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  fluidPage(
-                                    DT::dataTableOutput('drivers_of_dfs_growth_table')
-                                  )
-                                ),
-                                shinydashboard::box(
-                                  title = 'Macro drivers of growth',
-                                  footer = '',
-                                  status = 'primary',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  fluidPage(
-                                    DT::dataTableOutput('macro_drivers_of_growth_table')
-                                  )
-                                )
-                              ),
-                              
-                              
-                              fluidRow(
-                                shinydashboard::box(
-                                  title = 'Mobile Money Market',
-                                  footer = '',
-                                  status = 'primary',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                 plotOutput('plot_mm_mkt')
-                                ),
-                                shinydashboard::box(
-                                  title = 'Mobile Money Transactions',
-                                  footer = '',
-                                  status = 'danger',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  plotOutput('plot_mm_trans')
-                                )),
-                              fluidRow(
-                                shinydashboard::box(
-                                  title = 'Mobile Money by Region',
-                                  footer = '',
-                                  status = 'info',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  plotOutput('plot_mm_ssa')
-                                ),
-                                
                                 shinydashboard::box(
                                   title = 'Transactions by Region',
                                   footer = '',
-                                  status = 'info',
+                                  status = 'warning',
                                   solidHeader = TRUE,
                                   background = NULL,
-                                  width = 6,
+                                  width = 12,
                                   collapsible = TRUE,
                                   collapsed = FALSE,
                                   plotOutput('plot_mm_ssa_new')
                                 )
                                 
-                              ),
-                              fluidRow(
-                                shinydashboard::box(
-                                  title = 'Drivers of Growth',
-                                  footer = '',
-                                  status = 'success',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  DT::dataTableOutput('tab_mm_pen')
-                                ),
-                                shinydashboard::box(
-                                  title = 'DFS Market and Financial Access Points',
-                                  footer = '',
-                                  status = 'warning',
-                                  solidHeader = TRUE,
-                                  background = NULL,
-                                  width = 6,
-                                  collapsible = TRUE,
-                                  collapsed = FALSE,
-                                  DT::dataTableOutput('tab_mm_mkt')
-                                )
                               )
                               ),
                      tabPanel('Qualitative overview',
-                              br(),
-                              shinydashboard::box(
-                                title = NULL,
-                                footer = '',
-                                status = 'warning',
-                                solidHeader = TRUE,
-                                background = NULL,
-                                width = 12,
-                                collapsible = TRUE,
-                                collapsed = FALSE,
-                                DT::dataTableOutput('qualitative_overview')
-                              )),
+                              h3('Regulation and technology'),
+                              tableOutput('qualitative_overview'),
+                              h3('Competitive dynamics'),
+                              tableOutput('qualitative_overview2')
+                              ),
                      tabPanel('Additional analyses',
                               br(),
                               fluidPage(
@@ -1171,7 +1078,7 @@ server <- function(input, output) {
   
   # Digital financial services market table
   output$digital_financial_services_market_table <- 
-    DT::renderDataTable({
+    function(){
       sub_dat <- all_country()
       # Keep only the relevant columns
       columns <- c('Registered MM Accounts',
@@ -1188,23 +1095,22 @@ server <- function(input, output) {
         dplyr::filter(key %in% columns) %>%
         dplyr::distinct(key, value, .keep_all = TRUE) %>%
         dplyr::filter(!duplicated(key)) %>%
+        mutate(value = ifelse(!is.na(unit), 
+                              paste0(value, ' ', unit),
+                              value)) %>%
         dplyr::select(key, value)
       # Joined
       joined <- left_join(left, right,
                           by = 'key')
       joined$value <- round(joined$value)
-      
-      DT::datatable(joined,
-                    colnames = c('', ''),
-                    rownames = FALSE,
-                    options=list(dom='t',
-                                 ordering=F,
-                                 pageLength = nrow(joined)))
-    })
+      names(joined) <- NULL#c(' ', '  ')
+      joined %>%
+        kable('html') %>%
+        kable_styling(font_size = 9, bootstrap_options = c("striped", "hover", "condensed"))}
   
   # Financial access points table
   output$financial_access_points_table <- 
-    DT::renderDataTable({
+    function(){
       sub_dat <- all_country()
       columns <- c('Registered MM agents',
                    'MM bank agents',
@@ -1220,357 +1126,19 @@ server <- function(input, output) {
         dplyr::filter(key %in% columns) %>%
         dplyr::distinct(key, value, .keep_all = TRUE) %>%
         dplyr::filter(!duplicated(key)) %>%
+        mutate(value = ifelse(!is.na(unit), 
+                              paste0(value, ' ', unit),
+                              value)) %>%
         dplyr::select(key, value)
       # Joined
       joined <- left_join(left, right,
                           by = 'key')
+      names(joined) <- NULL#c(' ', '  ')
+      joined %>%
+        kable('html') %>%
+        kable_styling(font_size = 9, bootstrap_options = c("striped", "hover", "condensed"))
       
-      DT::datatable(joined,
-                    colnames = c('', ''),
-                    rownames = FALSE,
-                    options=list(dom='t',
-                                 ordering=F,
-                                 pageLength = nrow(joined)))
-      
-    })
-  
-  # create tables: (1) tab_mm_mkt which are the first two tables on page 5 - mobile market accounts and financial access points
-  # and (2) the last two, the drivers of dfs growth
-  
-  # table 1
-  output$tab_mm_mkt <- DT::renderDataTable({
-    
-    sub_dat <- all_country()
-    # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    new_name = c("Active MM Accounts", "MM Transaction Volume", "MM Transaction Value USD",'Credit Card Volume',
-                 'Debit Card Volume', 'Total Credit Card Value (USD)', 'Total Debit Card Value (USD)', 'Total Credit Card Internet Value (USD)',
-                 'Total Debit Card Internet Value (USD)', "Total MM Agents", "Number of Banks", "Number of ATMs", "Total Volume Debit Card POS", 
-                 "Total Volume Credit Card POS", "Total Volume E Card POS") 
-    
-    dat_name = c("Mobile money accounts: active", "Mobile money transactions: number", "Mobile money transactions: value", "Volume Credit card", "Volume Debit card",
-                 "Value in USD Credit card", "Value in USD Debit card", "Value in USD Credit card internet" , "Value in USD Debit card internet","Mobile money agent outlets:
-                 registered", "Number of bank branches in Number", "Number of ATMs in NA","Volume Debit card pos", "Volume E money card pos", "Volume Credit card pos" )
-    
-    new_table = data.frame(dat_name, new_name)  
-    
-    
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 1)
-    
-    # Keep only most recent year
-    most_recent <- max(sub_dat$year, na.rm = TRUE)
-    sub_dat <- sub_dat %>% filter(year == most_recent)
-    
-    # subset data frame by all the variable we need 
-    var_string <- "Mobile money accounts: active|Mobile money transactions: number|Mobile money transactions: value|Volume Credit card|Volume Debit card|Value in USD Credit card|Value in USD Credit card|Value in USD Credit card internet|Value in USD Debit card internet|Mobile money agent outlets: registered|Number of bank branches in Number| Number of ATMs in NA|Volume Debit card pos|Volume E money card pos|Volume Credit card pos"
-    
-    # subset by var_string 
-    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    
-    # keep lastest available data - year already sorted, remove NAs, and remove duplicates which automatically remove the second duplcate
-    sub_dat <- sub_dat[complete.cases(sub_dat),]
-    sub_dat <- sub_dat[!duplicated(sub_dat$key),]
-    
-    # remove unneed colmns 
-    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
-  
-    # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
-    final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
-    
-    # rempove dat_name column and fill NA with "NA"
-    final_table$dat_name <- NULL
-    
-    # remove NAs
-    final_table <- final_table[!is.na(final_table$value),]
-    # final_table[is.na(final_table)] <- 'NA'
-    
-    # round 
-    final_table$value <- round(final_table$value, 2)
-    
-    DT::datatable(final_table, 
-                  colnames = c('', ''),
-                  rownames = FALSE)
-    
-  })
-  
-  # Note on Market penetration is the percentage of a target market that consumes a product or service. Market penetration can also be a measure of one company's sales as a percentage of all sales for a product. In a broad sense, market penetration is a measure of individuals in a target market who consume something versus those who do not. 
-  # number of people who bought over population of country?
-  
-  # table 2
-  output$tab_mm_pen <- DT::renderDataTable({
-    sub_dat <- all_country()
-    
-    # USE ACTUAL VARIABLE NAMES INSTEAD OF GSUBED WITHOUT REGEX
-    # first create a table that has the variables they want and fill it with NAs. it also has a column of "better names" that will show up on the app once the data is merged
-    new_name = c("Total Population","Unique Mobile Phone Penetration", "Smartphone Penetration", "% of Adults with FI Account",'Tech Hubs', 
-                 "GDP per capita", "Real GDP Growth Annual Percent Change", "Bank Assets/GDP", "# of Unbanked Adults", "Poverty gap at 1.90 per day",
-                 "Adult Literacy rate") 
-    
-    dat_name = c("Population, total" ,"Q4 Percentage Unique Subscribers", "Q4 Percentage with Smart Phone", "Account at a financial institution % age 15 ts", 
-                 "Tech Hubs", "GDP per capita, PPP current international $", "Real GDP Growth Annual Percent Change", 
-                 "Assets \nas % of GDP in as % of GDP", "# of unbanked adults", "Poverty gap at $1.90 a day 2011 PPP %", 
-                 "Literacy rate, adult total % of people ages 15 and above")
-    
-    new_table = data.frame(dat_name, new_name)  
-    
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) - 1)
-    
-    # Keep only most recent year
-    most_recent <- max(sub_dat$year, na.rm = TRUE)
-    sub_dat <- sub_dat %>% filter(year == most_recent)
-    
-    # remove Q1-Q3 in variables for smart phone subscribers
-    sub_dat <- sub_dat %>% filter(!grepl('Q1|Q2|Q3', sub_dat$key)) 
-    
-    # subset data frame by all the variable we need 
-    var_string <- "Population, total|Q4 Percentage Unique Subscribers|Q4 Percentage with Smart Phone|Account at a financial institution % age 15 ts|Tech Hubs|Population ages 0-14, total|GDP per capita, PPP current international $|Real GDP Growth Annual Percent Change|Assets \nas % of GDP in as % of GDP|# of unbanked adults|Poverty gap at $1.90 a day 2011 PPP %|Literacy rate, adult total % of people ages 15 and above"
-    
-    # subset by var_string 
-    sub_dat <- sub_dat[grepl(var_string, sub_dat$key),]
-    
-    # remove unneed colmns 
-    sub_dat$iso2 <- sub_dat$sub_region <- sub_dat$country <- sub_dat$year <- NULL
-    
-    # left join sub_dat onto new_table, this way the variable will remain on the table just with NAs if not avaialble for country.
-    final_table <- left_join(new_table, sub_dat, by = c("dat_name" = "key"))
-    
-    # round 
-    final_table$value <- round(final_table$value, 2)
-    
-    # rempove dat_name column and fill NA with "NA"
-    final_table$dat_name <- NULL
-    # remove NAs
-    final_table <- final_table[!is.na(final_table$value),]
-    # final_table[is.na(final_table)] <- 'NA'
-    
-    # round 
-    final_table$value <- round(final_table$value, 2)
-
-    DT::datatable(final_table, 
-                  colnames = c('', ''),
-                  rownames = FALSE)
-    
-  })
-  
-  output$plot_mm_mkt <- renderPlot({
-    sub_dat <- all_country()
-        # need % who have mm or fi account, percent who use mm, % who use mobile banking, % with debit cards, % with credit cards
-    # the chart is kinda dumb if MM is the same as mobile money.
-    
-    # REGEX MESSES THIS UP - WILL NEED TO CHANGE
-    vars <- c("Mobile account, income, poorest 40% % ages 15 w2" ,"Account at a financial institution % age 15 ts",
-              "Mobile account, income, richest 60% % ages 15 w2","Mobile account, male % age 15 w2",
-              "Mobile account, female % age 15 w2", "Debit card % age 15 ts",
-              "Credit card % age 15 ts")
-              
-    sub_dat <- sub_dat %>% dplyr::filter(year <= as.numeric(format(Sys.Date(), '%Y')) -1)
-
-    # keep only relevant indicators
-    sub_dat <- sub_dat %>%
-      filter(key %in% vars) %>%
-      filter(!is.na(value))
-    
-    # Keep only most recent year
-    most_recent <- max(sub_dat$year, na.rm = TRUE)
-    sub_dat <- sub_dat %>% filter(year == most_recent)
-    
-    # Only plot if data available
-    
-    if(nrow(sub_dat) == 0){
-      this_country <- country()
-      ggplot() +
-        theme_landscape() +
-        labs(title = paste0('No data available for ', this_country))
-      
-    } else {
-      # remove unneed colmns
-      sub_dat <- sub_dat %>%
-        dplyr::select(key, value)
-      
-      # round
-      sub_dat$value <- round(sub_dat$value, 2)
-      
-      # Define colors
-      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
-      
-      # Replace spaces in key with line breaks
-      sub_dat$key <- gsub(' ', '\n', sub_dat$key)
-      
-      # plot
-      ggplot(data = sub_dat,
-             aes(x = key,
-                 y = value)) +
-        geom_bar(stat = 'identity',
-                 aes(fill = key),
-                 alpha = 0.7) +
-        theme_landscape() +
-        labs(x = '',
-             y = '',
-             title = '',
-             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
-        scale_fill_manual(name = '',
-                          values = cols) +
-        theme(axis.text.x = element_text(
-                                         size = 12)) +
-        theme(legend.position = 'none') 
     }
-    
-  })
-  
-  
-  # plot_mm_trans
-  
-  output$plot_mm_trans <- renderPlot({
-    
-    options(scipen=999)
-    
-    # get data
-    sub_dat <- all_country()
-    
-    # # instead of just doing credit card here, i should add all debit, credit, and e commerce, but for the sake of time doing this for now
-    vars <- c( "Value in USD Mobile money", "Value in USD Atm", "Value in USD Cheques", "Value in USD Credit card",  "Value in USD Debit card",
-               "Value in USD E money card", "Value in USD Credit card internet", "Value in USD Debit card internet","Value in USD E money card internet",
-               "Value in USD Credit card pos", "Value in USD Debit card pos",  "Value in USD E money card pos")
-                                                                               
-            
-
-    # filter by year
-    sub_dat <- sub_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 1)
-
-    # keep only relevant indicators
-    sub_dat <- sub_dat %>%
-      filter(key %in% vars) %>%
-      filter(!is.na(value))
-
-    # Keep only most recent year
-    most_recent <- suppressWarnings(max(sub_dat$year, na.rm = TRUE))
-    sub_dat <- sub_dat %>% filter(year == most_recent)
-    
-    # Only plot if data available
-    
-    if(nrow(sub_dat) == 0){
-      this_country <- country()
-      ggplot() +
-        theme_landscape() +
-        labs(title = paste0('No data available for ', this_country))
-      
-    } else {
-      # Data exists, so let's make a plot
-      # remove unneed colmns
-      sub_dat <- sub_dat %>%
-        dplyr::select(key, value)
-      
-      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(nrow(sub_dat))
-      
-      # Replace spaces in key with line breaks
-      sub_dat$key <- gsub(' ', '\n', sub_dat$key)
-      
-      # round value 
-      sub_dat$value <- round(sub_dat$value)
-      
-      # plot
-      ggplot(data = sub_dat,
-             aes(x = key,
-                 y = value)) +
-        geom_bar(stat = 'identity',
-                 aes(fill = key)) +
-        theme_landscape() +
-        theme(legend.position = 'none') +
-        labs(x = '',
-             y = '',
-             title = '',
-             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
-        scale_fill_manual(name = '',
-                          values = cols) +
-        theme(axis.text.x = element_text(
-                                         size = 12)) 
-    }
-    
-    
-    
-    
-  })
-  
-  # plot_mm_ssa
-  output$plot_mm_ssa <- renderPlot({
-    
-    # get region and data vars, and country name
-    sub_dat <- all_country()
-    region_dat <- get_regions()
-    this_country <- country()
-    
-    # put country data into sub_region data for comparison and remove unneeded columns to match region_dat
-    sub_dat$sub_region <- sub_dat$country
-    sub_dat$country <- NULL
-    sub_dat$iso2 <-NULL
-    
-    # combine region and country data for comparison
-    region_dat <- bind_rows(region_dat,
-                            sub_dat)
-    
-    # get variables
-    vars <- c("Mobile account % age 15 w2" , "Mobile money balance value % of GDP", "Mobile money transactions: value % of GDP" )
-    
-    # keep only relevant indicators
-    region_dat <- region_dat %>%
-      filter(key %in% vars) %>%
-      filter(!is.na(value))
-    
-    # subset for year
-    region_dat <- region_dat %>% dplyr::filter(year < as.numeric(format(Sys.Date(), '%Y'))- 1)
-    
-    
-    # Keep only most recent year
-    most_recent <- suppressWarnings(max(region_dat$year, na.rm = TRUE))
-    region_dat <- region_dat %>% filter(year == most_recent)
-    
-    
-
-    # Only plot if data available and country still exists after subsetting for variables
-    if(nrow(region_dat) == 0 | all(!grepl(this_country, region_dat$sub_region))){
-      this_country <- country()
-      ggplot() +
-        theme_landscape() +
-        labs(title = paste0('No data available for ', this_country))
-      
-    } else {
-      
-      # get the mean value for each region and country
-      region_dat <- region_dat %>% group_by(sub_region,key) %>% summarise(mean_value = mean(value, na.rm = T))
-      
-      # get colors based on sub region
-      cols <- colorRampPalette(brewer.pal(n = 8, 'Spectral'))(length(unique(region_dat$sub_region)))
-      
-      # Replace spaces in key with line breaks
-      region_dat$key <- gsub(' ', '\n', region_dat$key)
-      
-      # make country the ref level, so it shows up on top for legend
-      region_dat$sub_region <- relevel(factor(region_dat$sub_region),ref = this_country)
-      
-      # round value 
-      region_dat$mean_value <- round(region_dat$mean_value)
-      
-      # plot
-      ggplot(data = region_dat,
-             aes(x = key,
-                 y = mean_value)) +
-        geom_bar(stat = 'identity', position = 'dodge',
-                 aes(fill = sub_region)) +
-        theme_landscape() +
-        labs(x = '',
-             y = '',
-             title = '',
-             subtitle = paste0('Data as of ', most_recent, ' (most recent available)')) +
-        scale_fill_manual(name = '',
-                          values = cols) +
-        theme(axis.text.x = element_text(
-                                         size = 12)) 
-    }
-    
-    
-  })
-  
-  
-  
   # plot_mm_ssa
   output$plot_mm_ssa_new <- renderPlot({
     
@@ -1651,9 +1219,10 @@ server <- function(input, output) {
   })
   
   output$qualitative_overview <-
-    DT::renderDataTable({
+    function(){
       this_country <- country()
       x <- df_qualy %>%
+        filter(sub_key == 'Regulation and technology') %>%
         filter(country == this_country) %>%
         dplyr::select(key, value)
       x <- x %>%
@@ -1662,10 +1231,38 @@ server <- function(input, output) {
         x <- data.frame(a = '',
                         b = 'Data not yet available.')
       }
+      names(x) <- c(' ', '  ')
+      x %>%
+        kable('html')  %>%
+        column_spec(1, 
+                    bold = T, 
+                    # border_right = T, 
+                    width = "16em")
       
-      DT::datatable(x, rownames = NULL,
-                    colnames = c('', ''))
-      })
+      }
+  
+  output$qualitative_overview2 <-
+   function(){
+      this_country <- country()
+      x <- df_qualy %>%
+        filter(sub_key == 'Competitive dynamics') %>%
+        filter(country == this_country) %>%
+        dplyr::select(key, value)
+      x <- x %>%
+        filter(!is.na(value))
+      if(nrow(x) == 0){
+        x <- data.frame(a = '',
+                        b = 'Data not yet available.')
+      }
+      names(x) <- c(' ', '  ')
+      x %>%
+        kable('html') %>%
+        column_spec(1, 
+                    bold = T, 
+                    # border_right = T, 
+                    width = "16em")
+      
+    }
   
   output$glossary_table <- 
     DT::renderDataTable({
@@ -1825,7 +1422,7 @@ server <- function(input, output) {
     })
   
   output$drivers_of_dfs_growth_table <- 
-    DT::renderDataTable({
+    function(){
       
       a_country <- country()
       sub_dat <- all_country()
@@ -1837,6 +1434,9 @@ server <- function(input, output) {
       out <- sub_dat %>%
         filter(year <= as.numeric(format(Sys.Date(), '%Y'))) %>%
         filter(key %in% keys) %>%
+        mutate(value = ifelse(!is.na(unit), 
+                              paste0(value, ' ', unit),
+                              value)) %>%
         dplyr::select(key, value) %>%
         distinct(key, .keep_all = TRUE)
       out$value <- as.character(out$value)
@@ -1845,6 +1445,9 @@ server <- function(input, output) {
       out2020 <- sub_dat %>%
         filter(year == 2020) %>%
         filter(key %in% keys) %>%
+        mutate(value = ifelse(!is.na(unit), 
+                              paste0(value, ' ', unit),
+                              value)) %>%
         dplyr::select(key, value) %>%
         distinct(key, value)
       out2020$`2020` <- as.character(out2020$value)
@@ -1865,17 +1468,14 @@ server <- function(input, output) {
       joined <- left_join(joined,
                           out2020,
                           by = 'key')
-
-      DT::datatable(joined,
-                    colnames = c('', '', '2020'),
-                    rownames = FALSE,
-                    options=list(dom='t',
-                                 ordering=F,
-                                 pageLength = nrow(joined)))
-    })
+      names(joined) <-  c('', '', '2020')
+      joined %>%
+        kable('html') %>%
+        kable_styling(font_size = 9, bootstrap_options = c("striped", "hover", "condensed"))
+    }
   
   output$macro_drivers_of_growth_table <- 
-    DT::renderDataTable({
+    function(){
       sub_dat <- all_country()
       # Keep only the relevant columns
       columns <- c('Adult population',
@@ -1894,6 +1494,9 @@ server <- function(input, output) {
       right <- sub_dat %>% 
         dplyr::filter(key %in% columns) %>%
         dplyr::distinct(key, value, .keep_all = TRUE) %>%
+        mutate(value = ifelse(!is.na(unit), 
+                              paste0(value, ' ', unit),
+                              value)) %>%
         dplyr::filter(!duplicated(key)) %>%
         dplyr::select(key, value)
       # Get 2020 growth forecast
@@ -1913,14 +1516,11 @@ server <- function(input, output) {
       joined <- left_join(left, right,
                           by = 'key')
       joined$value <- round(joined$value, digits = 1)
-      
-      DT::datatable(joined,
-                    colnames = c('', ''),
-                    rownames = FALSE,
-                    options=list(dom='t',
-                                 ordering=F,
-                                 pageLength = nrow(joined)))
-    })
+      names(joined) <- NULL# c(' ', '  ')
+      joined %>%
+        kable('html') %>%
+        kable_styling(font_size = 9, bootstrap_options = c("striped", "hover", "condensed"))
+    }
   
   output$country_text <- 
     renderText({
@@ -1988,7 +1588,7 @@ server <- function(input, output) {
            subtitle = '(Just a placeholder chart; not yet imlemented)') +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_fill_manual(name = '',
-                        values = c('darkorange', 'blue')) 
+                        values = c('darkred', 'blue')) 
     
     Rmisc::multiplot(g1, g2)
   })
@@ -2018,7 +1618,7 @@ server <- function(input, output) {
       # theme(axis.text.x = element_text(angle = 45, hjust = 1,
       #                                  size = 9)) +
       scale_fill_manual(name = '',
-                        values = c('darkorange', 'blue', 'grey')) 
+                        values = c('darkred', 'blue', 'green')) 
   })
   
   output$map_ui <-
@@ -2095,9 +1695,80 @@ server <- function(input, output) {
              y = '') +
         facet_wrap(~key)
     }
-    
-    
   })
+  
+  output$mnos <- renderPlot({
+    cols <- c('darkred', 'blue', 'darkgreen')
+    data <- data_frame(key = c('Airtel Money',
+                                    'MobilPay', 
+                                    'M-Pesa'),
+                       value = c(2, 6, 92))
+    ggplot(data = data,
+           aes(x = key,
+               y = value,
+               fill = key)) +
+      geom_bar(stat = 'identity',
+               alpha = 0.6) +
+      scale_fill_manual(name = '',
+                        values = cols) +
+      theme_landscape() +
+      labs(x = '',
+           y = '',
+           title = 'E-Money Operators',
+           subtitle = 'Placeholder only: not real data') +
+      theme(legend.position = 'none')
+  })
+  
+  output$e_money_operators <- renderPlot({
+    cols <- c('darkred', 'blue', 'darkgreen', 'grey')
+    data <- data_frame(key = c('SafariCom',
+                               'FinServe', 
+                               'TelCom',
+                               'Other'),
+                       value = c(2, 6, 82, 10))
+    ggplot(data = data,
+           aes(x = key,
+               y = value,
+               fill = key)) +
+      geom_bar(stat = 'identity',
+               alpha = 0.6) +
+      scale_fill_manual(name = '',
+                        values = cols) +
+      theme_landscape() +
+      labs(x = '',
+           y = '',
+           title = 'E-Money Operators',
+           subtitle = 'Placeholder only: not real data') +
+      theme(legend.position = 'none')
+  })
+  
+  output$financial_access_points_per_100000 <-
+    renderPlot({
+      cols <- c('darkred', 'blue', 'darkgreen')
+      data <- expand.grid(key = c('Country',
+                                 'Average SSA',
+                                 'Highest SSA'),
+                         sub_key = c('Mobile agents', 'Banks'))
+      data$value = c(20, 10, 35, 15, 10, 10)
+      ggplot(data = data,
+             aes(x = key,
+                 y = value,
+                 fill = key)) +
+        geom_bar(stat = 'identity',
+                 alpha = 0.6) +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        theme_landscape() +
+        facet_wrap(~sub_key) +
+        labs(x = '',
+             y = '',
+             subtitle = 'Placeholder only: not real data') +
+        # theme(legend.position = 'none') +
+        theme(axis.text.x = element_blank()) +
+        geom_label(aes(label = value),
+                   fill = NA)
+      
+    })
 }
 
 shinyApp(ui, server)
