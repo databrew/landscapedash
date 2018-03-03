@@ -1655,8 +1655,16 @@ server <- function(input, output) {
       this_country <- country()
       x <- df_qualy %>%
         filter(country == this_country) %>%
-        dplyr::select(key, value)   
-      DT::datatable(x, rownames = NULL)
+        dplyr::select(key, value)
+      x <- x %>%
+        filter(!is.na(value))
+      if(nrow(x) == 0){
+        x <- data.frame(a = '',
+                        b = 'Data not yet available.')
+      }
+      
+      DT::datatable(x, rownames = NULL,
+                    colnames = c('', ''))
       })
   
   output$glossary_table <- 
