@@ -251,6 +251,13 @@ body <- dashboardBody(
                                                                'Under',
                                                                'Construction')))
                               ),
+                              fluidRow(
+                                column(6,
+                                       uiOutput('')),
+                                column(6,
+                                       uiOutput('plot_points'))
+                              ),
+                              
                                 br(),
                                 shinydashboard::box(
                                   title = 'Custom plot',
@@ -1306,6 +1313,37 @@ server <- function(input, output) {
                   multiple = TRUE)
     })
   
+  # ui output for plot point size
+  output$plot_points <- renderUI({
+    
+    already_chosen <- input$country_analysis_indicator
+    chart_type <- input$country_analysis_chart_type
+    years <- input$country_analysis_country_year
+    the_country <- input$country_analysis_country
+    if(is.null(years)){
+      years <- range(df$year, na.rm = TRUE)
+    }
+    available_indicators <- okay_indicators_country %>%
+      filter(year >= years[1],
+             year <= years[2]) %>%
+      filter(country %in% the_country) %>%
+      .$key %>% unlist
+    available_indicators <- sort(unique(available_indicators))
+    available_indicators <- available_indicators[!available_indicators %in% already_chosen]
+    
+      if(chart_type == 'Points') {
+      
+        selectInput('plot_points',
+                    'Point size variabe',
+                    choices = available_indicators,
+                    selected = 'Credit cards',
+                    multiple = FALSE)
+      } else {
+        NULL
+      }
+
+    })
+  
   # Country analysis plot
   output$country_analysis_plot <-
     renderPlot({
@@ -1321,11 +1359,15 @@ server <- function(input, output) {
       data <- data %>%
         filter(year >= years[1],
                year <= years[2]) 
-      # Get chart type
+      # # Get chart type
       chart_type <- input$country_analysis_chart_type
-      
+      # 
+    
       # Get indicator
       indicator <- input$country_analysis_indicator
+      # Get size of points 
+      point_size <- input$plot_points 
+      
       if(is.null(indicator) | length(indicator) > 3 | length(indicator) < 1){
         # Too many indicators, spit back empty chart
         ggplot() +
@@ -1360,41 +1402,104 @@ server <- function(input, output) {
             labs(x = 'Year',
                  y = '')
         } else if(chart_type == 'Points'){
+          
+          # now it filters for indicator and variable for point size 
+          # n_indicators is -1 for that reason
+          plot_data <- data %>%
+            filter(key %in% c(indicator, point_size))
+          n_indicators <- (length(unique(plot_data$key)) -1)
+          cols <- colorRampPalette(brewer.pal(n = 8, name = 'Spectral'))(n_indicators)
+          
           if(n_indicators == 1){
-            ggplot(data = plot_data,
-                   aes(x = country,
-                       y = value)) +
-              geom_point() +
-              theme_landscape() +
-              labs(x = ' ', y = '') +
-              facet_wrap(~year)
-          } else if(n_indicators == 2){
-            wide <- plot_data %>%
+            # removed unit but stored its infor in unique_unit, incase we want to use that in the legend or something.
+            # also remove key_original. I removed both of those so when I make the data wide, my variables of interest are 
+            # lined up with each to make plotting easier.
+            temp_data <- plot_data
+            unique_unit <- unique(temp_data$unit)
+            unique_unit <- unique_unit[!is.na(unique_unit)]
+            temp_data$unit <- NULL
+            temp_data$key_original <- NULL
+            wide <- temp_data %>%
               spread(key = key, value = value)
             
-            labs <- names(wide)[6:7]
-            names(wide)[6:7] <- c('x', 'y')
+            first_cols <- colnames(wide)[1:4]
+            wide <- wide[, c(first_cols, indicator, point_size)]
+            
+            labs <- names(wide)[5:6]
+            names(wide)[5:6] <- c('value', 'size_of_points')
+            wide$size_of_points <- abs(wide$size_of_points)
             ggplot(data = wide,
-                   aes(x = x,
-                       y = y)) +
+                   aes(x = country,
+                       y = value,
+                       size = size_of_points)) +
               geom_point() +
-              facet_wrap(~year) +
-              labs(x = labs[1],
-                   y = labs[2]) +
-              geom_smooth() +
-              theme_landscape()
-            
-          } else if(n_indicators == 3){
-            wide <- plot_data %>%
+              scale_size('', guide = FALSE,
+                         breaks = '',
+                         labels = '',
+                         range = c(1,6)) +
+              theme_landscape() +
+              labs(x = '', y = indicator) +
+              facet_wrap(~year)
+          
+          } else if (n_indicators == 2){
+            temp_data <- plot_data
+            unique_unit <- unique(temp_data$unit)
+            unique_unit <- unique_unit[!is.na(unique_unit)]
+            temp_data$unit <- NULL
+            temp_data$key_original <- NULL
+            wide <- temp_data %>%
               spread(key = key, value = value)
+            
+            first_cols <- colnames(wide)[1:4]
+            wide <- wide[, c(first_cols, indicator, point_size)]
             
             labs <- names(wide)[5:7]
-            names(wide)[5:7] <- c('x', 'y', 'z')
+            names(wide)[5:7] <- c('x', 'y' ,'size_of_points')
+            wide$size_of_points <- abs(wide$size_of_points)
             ggplot(data = wide,
                    aes(x = x,
                        y = y,
-                       color = z)) +
+                       size = size_of_points)) +
               geom_point() +
+              scale_size('', guide = FALSE,
+                         breaks = '',
+                         labels = '',
+                         range = c(1,6)) +
+              theme_landscape() +
+              labs(x = labs[1], y = labs[2]) +
+              facet_wrap(~year)
+            
+          } else if(n_indicators == 3){
+            temp_data <- plot_data
+            unique_unit <- unique(temp_data$unit)
+            unique_unit <- unique_unit[!is.na(unique_unit)]
+            temp_data$unit <- NULL
+            temp_data$key_original <- NULL
+            # make ref the point size variable 
+            wide <- temp_data %>%
+              spread(key = key, value = value)
+            
+            first_cols <- colnames(wide)[1:4]
+            wide <- wide[, c(first_cols, indicator, point_size)]
+            
+            # get new labels
+            labs <- names(wide)[5:8]
+            names(wide)[5:8] <- c('x', 'y', 'z', 'size_of_points')
+
+            # get standardized point size vector 
+            # first get absolute value as some values are numeric
+            wide$size_of_points <- abs(wide$size_of_points)
+
+            ggplot(data = wide,
+                   aes(x = x,
+                       y = y,
+                       color = z,
+                       size = size_of_points)) +
+              geom_point() +
+              scale_size('', 
+                         breaks = '',
+                         labels = '',
+                         range = c(1,6)) +
               facet_wrap(~year) +
               labs(x = labs[1],
                    y = labs[2]) +
@@ -1407,7 +1512,13 @@ server <- function(input, output) {
                     legend.background = element_rect(fill = '#ecf0f5',
                                                      color = '#ecf0f5'))
             
+          } else {
+            # No data, just return empty chart
+            ggplot() +
+              theme_landscape() +
+              labs(title = 'Too many variables')
           }
+          # add in message for too many indicators
         } else if(chart_type == 'Lines'){
           ggplot(data = plot_data) +
             geom_point(aes(x = year,
