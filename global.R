@@ -789,6 +789,3 @@ df <- df %>%
   dplyr::rename(unit = Unit)
 df$unit <- ifelse(df$unit == 'Number', NA, df$unit)
 
-
-# Read in the further qualitative data sent
-qualitative <- read_excel('data/qualitative.xlsx', skip = 2)
