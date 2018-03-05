@@ -21,6 +21,9 @@ if('prepared_data.RData' %in% dir()){
 } else {
   
   # Load a shapefile of Africa
+  # africa <- readOGR("spatial_data/africa.geo.json")
+  # africa@data$COUNTRY <- africa@data$name
+  
   africa <- rgdal::readOGR('spatial_data/africa_shp/', 'AfricanCountries')
   # africa <- st_read('spatial_data/africa_shp/', 'AfricanCountries')
   # Simplify  
