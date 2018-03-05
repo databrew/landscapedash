@@ -1578,8 +1578,8 @@ server <- function(input, output) {
       out2020$value <- NULL
       
       x <- data_frame(key = keys[1],
-                      value = qualy$value[qualy$key == 'Regulatory Environment' & 
-                                        qualy$country == a_country])
+                      value = df_qual$value[df_qual$key == 'Regulatory Environment' & 
+                                        df_qual$country == a_country])
       out <- bind_rows(x,
                        out)
       
