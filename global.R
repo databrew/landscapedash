@@ -12,6 +12,7 @@ library(RColorBrewer)
 library(rgeos)
 library(knitr)
 library(kableExtra)
+library(Rmisc)
 # library(sf)
 
 if('prepared_data.RData' %in% dir()){
