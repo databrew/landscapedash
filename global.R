@@ -72,8 +72,10 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in and clean qualiative overview data
   ##########
-  qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                      sheet = 'Qualitative Overview')
+  # qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  #                     sheet = 'Qualitative Overview')
+  qualy <- read_excel('data/qualitative.xlsx',
+                      sheet = 2)
 
   # replace N/A with NA 
   qualy <- as.data.frame(apply(qualy, 2, function(x){

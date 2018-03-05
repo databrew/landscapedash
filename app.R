@@ -1257,7 +1257,8 @@ server <- function(input, output) {
         column_spec(1, 
                     bold = T, 
                     # border_right = T, 
-                    width = "16em")
+                    width = "16em") %>%
+        kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
       
       }
   
@@ -1280,7 +1281,8 @@ server <- function(input, output) {
         column_spec(1, 
                     bold = T, 
                     # border_right = T, 
-                    width = "16em")
+                    width = "16em") %>%
+        kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
       
     }
   
