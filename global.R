@@ -1,4 +1,3 @@
-library(tidyverse)
 library(broom)
 library(raster)
 library(leaflet)
@@ -14,6 +13,8 @@ library(knitr)
 library(kableExtra)
 library(Rmisc)
 # library(sf)
+library(tidyverse)
+
 
 if('prepared_data.RData' %in% dir()){
   load('prepared_data.RData')
@@ -70,6 +71,8 @@ if('prepared_data.RData' %in% dir()){
   ##########
   qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
                       sheet = 'Qualitative Overview')
+  qualy2 <- read_excel('data/qualitative.xlsx', skip = 1, 
+                       sheet = 'Qual data coll')
   
   # replace N/A with NA 
   qualy <- as.data.frame(apply(qualy, 2, function(x){
@@ -787,6 +790,5 @@ df <- df %>%
 df$unit <- ifelse(df$unit == 'Number', NA, df$unit)
 
 
-# # Remove all those indicators not in column b of glossary
-# df <- df %>%
-#   filter(key %in% glossary$`Indicator Name`)
+# Read in the further qualitative data sent
+qualitative <- read_excel('data/qualitative.xlsx', skip = 2)

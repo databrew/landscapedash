@@ -1334,7 +1334,7 @@ server <- function(input, output) {
       if(chart_type == 'Points') {
       
         selectInput('plot_points',
-                    'Point size variabe',
+                    'Point size variable',
                     choices = available_indicators,
                     selected = 'Credit cards',
                     multiple = FALSE)
@@ -1405,6 +1405,7 @@ server <- function(input, output) {
           
           # now it filters for indicator and variable for point size 
           # n_indicators is -1 for that reason
+          # overwriting
           plot_data <- data %>%
             filter(key %in% c(indicator, point_size))
           n_indicators <- (length(unique(plot_data$key)) -1)
@@ -1578,8 +1579,8 @@ server <- function(input, output) {
       out2020$value <- NULL
       
       x <- data_frame(key = keys[1],
-                      value = df_qual$value[df_qual$key == 'Regulatory Environment' & 
-                                        df_qual$country == a_country])
+                      value = df_qualy$value[df_qualy$key == 'Regulatory Environment' & 
+                                               df_qualy$country == a_country])
       out <- bind_rows(x,
                        out)
       
