@@ -792,3 +792,13 @@ df <- df %>%
   dplyr::rename(unit = Unit)
 df$unit <- ifelse(df$unit == 'Number', NA, df$unit)
 
+# Hard code some changes to indicator names
+df <- df %>%
+  mutate(key = 
+           ifelse(key == 'Total Assets \nUS$ Million in US$ Million',
+                  'Bank assets/GDP',
+                  key))
+
+# Keep only the relevant indicators from the glossary
+good_indicators <- sort(unique(glossary$`Indicator Name`))
+keys <- sort(unique(df$key))
