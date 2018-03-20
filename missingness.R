@@ -19,8 +19,8 @@ joined <- left_join(x = left,
 summarized <- 
   joined %>%
   group_by(key, year) %>%
-  summarise(countries_not_missing = paste0(sort(unique(country[missing])), collapse =';'),
-            countries_missing = paste0(sort(unique(country[!missing])), collapse = ';'))
+  summarise(countries_missing = paste0(sort(unique(country[missing])), collapse =';'),
+            countries_not_missing = paste0(sort(unique(country[!missing])), collapse = ';'))
 joined <- joined %>%
   dplyr::filter(missing) %>%
   dplyr::select(-missing) 
