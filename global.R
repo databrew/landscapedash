@@ -6,7 +6,6 @@ library(rgdal)
 library(readxl)
 library(Hmisc)
 library(htmlTable)
-library(leaflet)
 library(RColorBrewer)
 library(rgeos)
 library(knitr)
@@ -684,8 +683,8 @@ df$year <- as.numeric(as.character(df$year))
 # No na values
 df <- df %>% filter(!is.na(value))
 
-# For those with no year, assume 2017
-df$year[is.na(df$year)] <- 2015
+# For those with no year, assume 2016
+df$year[is.na(df$year)] <- 2016
 
 # No repeats
 df <- df %>%
