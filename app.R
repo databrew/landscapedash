@@ -1077,7 +1077,7 @@ server <- function(input, output) {
                           lng = adf$x,
                           lat = adf$y,
                           label = adf$country,
-                          labelOptions = labelOptions(noHide = TRUE,
+                          labelOptions = labelOptions(noHide = FALSE, # set to true to keep on top
                                                       textsize = text_size,
                                                       textOnly = TRUE,
                                                       # direction = 'middle',
@@ -1557,6 +1557,7 @@ server <- function(input, output) {
                 'Unique mobile phone penetration',
                 'Smartphone penetration',
                 '% of adults with FI account(1)',
+                'Cost to Income Ratio (%)',
                 'Tech Hubs')
       out <- sub_dat %>%
         filter(year <= as.numeric(format(Sys.Date(), '%Y'))) %>%

@@ -14,6 +14,8 @@ library(Rmisc)
 # library(sf)
 library(tidyverse)
 
+# Define the data file
+data_file <- 'data/23-03-18 Africa DFS landscape data tool .xlsx'
 
 if('prepared_data.RData' %in% dir()){
   load('prepared_data.RData')
@@ -64,14 +66,14 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in glossary data
   ##########
-  glossary <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  glossary <- read_excel(data_file,
                          sheet = 'Glossary',
                          skip = 1)
   
   ##########
   # read in and clean qualiative overview data
   ##########
-  # qualy <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  # qualy <- read_excel(data_file,
   #                     sheet = 'Qualitative Overview')
   qualy <- read_excel('data/qualitative.xlsx',
                       sheet = 2)
@@ -116,7 +118,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in and clean IMF FAS 2017 data
   ##########
-  fas <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  fas <- read_excel(data_file,
                     sheet = 'IMF FAS 2017')
   
   # This data has info on ATM transactions and online mobile banking
@@ -144,7 +146,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in and clean AFSD 2016
   ##########
-  afsd <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  afsd <- read_excel(data_file,
                      sheet = 'AFSD 2016', skip = 3)
   
   # this data has two columns for each variable, one in english and one in french. I'm going to assume that I can get rid of french columns 
@@ -185,7 +187,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in findex and clean
   ##########
-  findex <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  findex <- read_excel(data_file,
                        sheet = 'Findex', skip = 1)
   
   # remove country code 
@@ -213,7 +215,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in findex  original and clean
   ##########
-  findex_original <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  findex_original <- read_excel(data_file,
                                 sheet = 'Findex original')
   
   # remove country code and indicator code
@@ -236,7 +238,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read and clean GDP Growth sheet
   ##########
-  gdp <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  gdp <- read_excel(data_file,
                     sheet = 'GDP Growth')
   
   # remove any row that is all NA
@@ -274,7 +276,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   
   # read in data, skip first two rows
-  unique_subscribers <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  unique_subscribers <- read_excel(data_file,
                                    sheet = 'Unique subsc ', skip = 2)
   
   # remove first row because its just a an aggregate africa variable. 
@@ -312,7 +314,7 @@ if('prepared_data.RData' %in% dir()){
   # read in and clean Smartphone Adoption
   ##########
   
-  smart_phone_adoption <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  smart_phone_adoption <- read_excel(data_file,
                                      sheet = 'Smartphone adoption', skip = 2)
   
   # remove first row because its just a an aggregate africa variable. 
@@ -350,7 +352,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   
   # read in data and get the only two columns that actually have data
-  tech_hubs <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  tech_hubs <- read_excel(data_file,
                           sheet = 'tech hubs', skip = 2) 
   tech_hubs <- tech_hubs[,(ncol(tech_hubs) - c(1,0))]
   names(tech_hubs) <- c('country', 'value')
@@ -370,7 +372,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in UFA 2014 and clean
   ##########
-  ufa <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  ufa <- read_excel(data_file,
                     sheet = 'UFA 2014')
   
   # remove X_1 because all NA and country code
@@ -398,7 +400,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # read in GPSS Retail transactions and clean
   ##########
-  gpss_retail_transactions <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  gpss_retail_transactions <- read_excel(data_file,
                                          sheet = 'GPSS Retail transactions')
   
    # remove country code
@@ -456,7 +458,7 @@ if('prepared_data.RData' %in% dir()){
   ##########
   # Read in gpps accounts
   ##########
-  gpps_accounts <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+  gpps_accounts <- read_excel(data_file,
                        sheet = 'GPPS Accounts',
                        skip = 5)
   # Make long
@@ -508,7 +510,7 @@ if('prepared_data.RData' %in% dir()){
   # gpps access points
   ##########
   gpps_access_points <- 
-    read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
+    read_excel(data_file,
                sheet = 'GPPS Access points',
                skip = 1)
   # names(gpps_access_points)[7] <- 
@@ -553,40 +555,41 @@ if('prepared_data.RData' %in% dir()){
   
   #####
   
-  ##########
-  # read in WEBDev Ind and clean
-  ##########
-  wb_dev <- read_excel('data/18-02-17 Africa DFS landscape data tool.xlsx',
-                       sheet = 'WBDev Ind')
-  
-  # remove country code
-  wb_dev$`Country Code` <- NULL
-  
-  # rename Country name to country
-  names(wb_dev)[1] <- 'country'
-  
-  # rename Series Name to key
-  names(wb_dev)[2] <- 'key'
-  
-  # gather data to make long
-  wb_dev <- gather(wb_dev, year, value, -c(country, key))
-  
-  # clean year variable 
-  wb_dev$year <- substr(wb_dev$year, 1,4)
-  
-  # change value to numeric to turn ".." into NA 
-  wb_dev$value <- as.numeric(wb_dev$value)
-  
-  # recode country column
-  wb_dev$country <- gsub("Congo, Dem. Rep.", "Congo (Democratic Republic of the)", wb_dev$country)
-  wb_dev$country <- gsub("Congo, Rep.", "Congo", wb_dev$country)
-  wb_dev$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", wb_dev$country)
-  wb_dev$country <- gsub("Gambia, The", "Gambia", wb_dev$country)
-  wb_dev$country <- gsub("Tanzania, The", "Tanzania, United Republic of" , wb_dev$country)
-  
-  # get regional data
-  regional_string <- 'Sub-Saharan|North Africa'
-  regional_data_wb <- wb_dev %>% filter(grepl(regional_string, wb_dev$country))
+  # ##########
+  # # read in WEBDev Ind and clean
+  # ##########
+  # They requested us to remove.
+  # wb_dev <- read_excel(data_file,
+  #                      sheet = 'WBDev Ind')
+  # 
+  # # remove country code
+  # wb_dev$`Country Code` <- NULL
+  # 
+  # # rename Country name to country
+  # names(wb_dev)[1] <- 'country'
+  # 
+  # # rename Series Name to key
+  # names(wb_dev)[2] <- 'key'
+  # 
+  # # gather data to make long
+  # wb_dev <- gather(wb_dev, year, value, -c(country, key))
+  # 
+  # # clean year variable 
+  # wb_dev$year <- substr(wb_dev$year, 1,4)
+  # 
+  # # change value to numeric to turn ".." into NA 
+  # wb_dev$value <- as.numeric(wb_dev$value)
+  # 
+  # # recode country column
+  # wb_dev$country <- gsub("Congo, Dem. Rep.", "Congo (Democratic Republic of the)", wb_dev$country)
+  # wb_dev$country <- gsub("Congo, Rep.", "Congo", wb_dev$country)
+  # wb_dev$country <- gsub("Cote d'Ivoire", "Côte d'Ivoire", wb_dev$country)
+  # wb_dev$country <- gsub("Gambia, The", "Gambia", wb_dev$country)
+  # wb_dev$country <- gsub("Tanzania, The", "Tanzania, United Republic of" , wb_dev$country)
+  # 
+  # # get regional data
+  # regional_string <- 'Sub-Saharan|North Africa'
+  # regional_data_wb <- wb_dev %>% filter(grepl(regional_string, wb_dev$country))
 
   ##########
   # bind all of the data together 
@@ -602,8 +605,8 @@ if('prepared_data.RData' %in% dir()){
                   smart_phone_adoption,
                   tech_hubs,
                   ufa,
-                  unique_subscribers,
-                  wb_dev)
+                  unique_subscribers)#,
+                  # wb_dev)
   
   # REMOVE THESE LATER
   df$key <- gsub("(", "", df$key, fixed = T)
@@ -640,9 +643,9 @@ if('prepared_data.RData' %in% dir()){
   # Arrange descending from most modern to least
   df <- df %>% arrange(desc(year), key, country)
 
-  # (2) combine gdp and wb regional data
-  df_regional <- bind_rows(regional_data_gdp,
-                           regional_data_wb)
+  # # (2) combine gdp and wb regional data
+  # df_regional <- bind_rows(regional_data_gdp,
+  #                          regional_data_wb)
   # Arrange descending from most modern to least
   df_regional <- df_regional %>% arrange(desc(year))
   
@@ -652,10 +655,10 @@ if('prepared_data.RData' %in% dir()){
   save(africa,
        df,
        df_qualy, 
-       df_regional,
+       # df_regional,
        glossary,
        countries_by_region,
-       wb_dev,
+       # wb_dev,
        file = 'prepared_data.RData')
 }
 
@@ -682,6 +685,86 @@ df$year <- as.numeric(as.character(df$year))
 
 # No na values
 df <- df %>% filter(!is.na(value))
+
+
+
+#################
+# FinStats Database (final).xlsx
+#################
+
+# Read in the newly sent "FinStats Database (final).xlsx" file
+fin <- read_excel('data/FinStats Database (final).xlsx',
+                  sheet = 'Indicator data',
+                  skip = 0)
+# Read in the list of variables which should be kept
+# (they're highlighted in yellow in the "Indicator key" tab)
+fin_key <- read_excel('data/FinStats Database (final).xlsx',
+                      sheet = 'Indicator key',
+                      skip = 0)
+# Since they're highlighted, we'll just manually define them here
+keepers <- c('S08BSK0', 
+             'S05BSK0',
+             'S01BSK0',
+             'S03BSK0',
+             'S04BSK0',
+             'S06BSK0',
+             'S07BSK0',
+             'S03FSI0',
+             'S01REM0')
+fin_key <- fin_key %>% filter(`Indicator code` %in% keepers)
+fin <- fin[,names(fin) %in% c('Country', 'Country name', 'Year', keepers)]
+# Replace column names in fin 
+column_dict <- data.frame(original = names(fin))
+column_dict <- left_join(column_dict,
+                         fin_key,
+                         by = c('original' = 'Indicator code'))
+# Remove those variables not highlighted
+for(i in 1:nrow(column_dict)){
+  if(column_dict$original[i] %in% keepers){
+    names(fin)[names(fin) == column_dict$original[i]] <- column_dict$`Indicator name`[i]
+  }
+}
+# Replace countries with their iso2 name and the name from the Africa object
+fin$Country <- NULL
+fin <- fin %>%
+  dplyr::rename(iso3 = `Country name`)
+fin <- fin %>%
+  left_join(africa@data %>%
+              dplyr::select(country, region, sub_region, iso3, iso2) %>%
+              dplyr::distinct(country, region, sub_region, iso3, iso2))
+# Make long
+fin <- fin %>%
+  tidyr::gather(key, value, `3 Bank Asset Concentration (%)`:`Average Cost of Sending USD200 to Selected Country (%)`)
+
+# Remove those not in Africa
+fin <- fin %>% dplyr::filter(!is.na(country))
+
+# Remove NA values
+fin <- fin %>% dplyr::filter(!is.na(value))
+
+# # Get units (not doing for now, not machine readable)
+# fin_units <- read_excel('data/FinStats Database (final).xlsx',
+#                         sheet = 'Indicator description',
+#                         skip = 0) %>%
+#   dplyr::select(Indicator, `Variable description`) %>%
+#   dplyr::rename(key = Indicator,
+#                 unit = `Variable description`) %>%
+#   dplyr::filter(!is.na(unit))
+# fin <- left_join(fin, fin_units)
+# fin$unit <- NA
+
+# Reshape into the format of df
+fin <- fin %>%
+  mutate(key_original = key) %>%
+  dplyr::rename(year = Year) %>%
+  dplyr::select(country, key, year, value, iso2, sub_region) 
+
+# Join with df
+df <- bind_rows(fin, df)
+
+###########################################
+
+
 
 # For those with no year, assume 2016
 df$year[is.na(df$year)] <- 2016
@@ -798,6 +881,10 @@ df <- df %>%
                   'Bank assets/GDP',
                   key))
 
+
+
+
 # Keep only the relevant indicators from the glossary
 good_indicators <- sort(unique(glossary$`Indicator Name`))
 keys <- sort(unique(df$key))
+
